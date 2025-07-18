@@ -154,7 +154,26 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
+<script>
+  // Ganti dengan URL Web App yang lo dapet dari Apps Script
+  const apiUrl = 'https://script.google.com/macros/s/AKfycbysOsW_I0X2UxA6Gl0KwfFtFwG39imuqM4qfPPDl_alNh1TBWBIPB9kbbYvbKU3OZE/exec';
 
+  fetch(apiUrl)
+    .then(response => response.json())
+    .then(data => {
+      console.log(data); // Cek datanya di console browser
+
+      // Di sini lo proses datanya dan tampilin di peta
+      // Contoh:
+      // data.forEach(item => {
+      //   const latitude = item.Latitude; // Sesuaikan nama kolom
+      //   const longitude = item.Longitude; // Sesuaikan nama kolom
+      //   // Tambahkan marker ke peta pake Leaflet atau Google Maps
+      //   L.marker([latitude, longitude]).addTo(map);
+      // });
+    })
+    .catch(error => console.error('Error fetching data:', error));
+</script>
 
 <script>
 

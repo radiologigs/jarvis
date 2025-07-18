@@ -606,17 +606,16 @@ function formatDate(date) {
 
 /** Menginisialisasi peta, layer, dan UI listeners */
 function initializeApp() {
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "&copy; OpenStreetMap contributors"
+   L.gridLayer.googleMutant({
+        type: 'roadmap' // atau 'satellite', 'hybrid', 'terrain'
     }).addTo(map);
-    map.addLayer(stationClusterGroup);
- map.addLayer(logClusterGroup);
 
+    map.addLayer(stationClusterGroup);
+    map.addLayer(logClusterGroup);
     createLayers();
     setupUIListeners();
     selectAll(true);
 }
-
 /** Membuat semua layer polygon dan marker dari mapConfig */
 function createLayers() {
     const sectors = new Set();

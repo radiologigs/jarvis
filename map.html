@@ -716,19 +716,35 @@ function toggleSector(sector, show) {
     }
 }
 
+// GANTI DENGAN KODE INI
 function selectAll(state) {
-    Object.keys(sectorMarkers).forEach(sector => toggleSector(sector, state));
+    if (state === true) { // Untuk tombol "Expand All"
+        Object.keys(sectorMarkers).forEach(sector => toggleSector(sector, true));
+    } else { // Untuk tombol "Collapse All"
+        Object.keys(sectorMarkers).forEach(sector => toggleSector(sector, false));
+    }
+    
+    // Setelah di-expand atau di-collapse, reset dropdown ke "Semua Sektor"
     $('#sector-dropdown').val('all');
 }
 
 function filterByDropdown() {
     const selected = $('#sector-dropdown').val();
+    
     if (selected === 'all') {
+        // Jika pilih "Semua Sektor", panggil fungsi expand all
         selectAll(true);
     } else {
-        selectAll(false);
+        // Jika pilih sektor tertentu:
+        // 1. Sembunyikan dulu semua layer (tanpa sentuh dropdown)
+        hideAllLayers();
+        // 2. Tampilkan layer untuk sektor yang dipilih
         toggleSector(selected, true);
     }
+}
+
+  function hideAllLayers() {
+    Object.keys(sectorMarkers).forEach(sector => toggleSector(sector, false));
 }
 
 // --- LOGIKA UPLOAD & PROSES FILE LOG ---

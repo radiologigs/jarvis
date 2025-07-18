@@ -580,8 +580,33 @@ function formatDate(date) {
     const year = date.getFullYear();
     return `${day}/${month}/${year}`;
 }
+  
+  // --- FUNGSI-FUNGSI UTAMA APLIKASI ---
+/** Fungsi untuk mengambil data dinamis dari Google Sheet */
+function loadDynamicData() {
+    const apiUrl = 'https://script.google.com/macros/s/AKfycbysOsW_I0X2UxA6Gl0KwfFtFwG39imuqM4qfPPDl_alNh1TBWBIPB9kbbYvbKU3OZE/exec';
 
-// --- FUNGSI-FUNGSI UTAMA APLIKASI ---
+    fetch(apiUrl)
+        .then(response => response.json())
+        .then(data => {
+            console.log("Data dari Google Sheet:", data); // Untuk debugging
+            
+            data.forEach(item => {
+                const lat = item.Latitude;
+                const lon = item.Longitude;
+                const nama = item.Nama;
+
+                if (lat && lon) {
+                    const marker = L.marker([lat, lon]);
+                    if (nama) {
+                        marker.bindPopup(`<b>${nama}</b> (From AppSheet)`);
+                    }
+                    stationClusterGroup.addLayer(marker);
+                }
+            });
+        })
+        .catch(error => console.error('Gagal mengambil data dari Google Sheet:', error));
+}
 
 /** Menginisialisasi peta, layer, dan UI listeners */
 function initializeApp() {
@@ -787,39 +812,6 @@ function updateMarkerPopupsWithLogs() {
 
 // --- JALANKAN APLIKASI ---
 $(document).ready(initializeApp);
-</script>
-  <script>
-  // PASTIKAN INI ADALAH URL WEB APP LO YANG BENAR
-  const apiUrl = 'https://script.google.com/macros/s/AKfycbysOsW_I0X2UxA6Gl0KwfFtFwG39imuqM4qfPPDl_alNh1TBWBIPB9kbbYvbKU3OZE/exec';
-
-  // Kode ini akan mengambil data dari URL di atas
-  fetch(apiUrl)
-    .then(response => response.json())
-    .then(data => {
-      console.log("Data berhasil diambil dari Google Sheet:", data);
-
-      // Looping untuk setiap baris data
-      data.forEach(item => {
-        // PENTING: Sesuaikan nama 'Latitude', 'Longitude', 'Nama' 
-        // dengan nama header di Google Sheet lo. Harus sama persis.
-        const lat = item.Latitude; 
-        const lon = item.Longitude;
-        const nama = item.Nama; 
-
-        // Cek jika data lokasi ada
-        if (lat && lon) {
-          const marker = L.marker([lat, lon]);
-          
-          if (nama) {
-            marker.bindPopup(`<b>${nama}</b>`);
-          }
-          
-          // Tambahkan marker ke layer cluster yang sudah ada
-          stationClusterGroup.addLayer(marker);
-        }
-      });
-    })
-    .catch(error => console.error('Error saat mengambil data:', error));
 </script>
 </body>
 </html>

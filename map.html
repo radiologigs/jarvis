@@ -80,19 +80,20 @@
 }
 
 /* Mengurangi jarak garis pemisah */
-#controls hr {
-    margin: 8px 0;
-}
-
-    #upload-status { font-style: italic; font-size: 12px; color: #555; margin-top: 5px; }
-
-@media (max-width: 600px) {
-    #controls {
-        top: 0;
-        right: 0;
-        left: 0;
-        border-radius: 0;
-        max-width: 100%;
+#controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    background: white;
+    padding: 8px;
+    border-radius: 6px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+    
+    /* Bagian untuk ukuran dinamis */
+    width: 45vw; /* Lebar 45% dari lebar viewport/layar */
+    max-width: 220px; /* Lebar maksimum 220px di layar besar */
+    min-width: 160px; /* Lebar minimum 160px di layar kecil */
     }
 }
 

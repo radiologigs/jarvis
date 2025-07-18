@@ -580,41 +580,59 @@ function formatDate(date) {
 function loadDynamicData() {
     const apiUrl = 'https://script.google.com/macros/s/AKfycbysOsW_I0X2UxA6Gl0KwfFtFwG39imuqM4qfPPDl_alNh1TBWBIPB9kbbYvbKU3OZE/exec';
 
-    fetch(apiUrl)
-        .then(response => response.json())
-        .then(data => {
-            console.log("Data dari Google Sheet:", data); // Untuk debugging
-            
-           // Buat 'kamus' untuk mencari lokasi stasiun dengan cepat
+   fetch(apiUrl)
+    .then(response => response.json())
+    .then(data => {
+        console.log("Data dari Google Sheet:", data);
+
+        // Buat 'kamus' untuk mencari lokasi stasiun dengan cepat
         const stationLocations = {};
         mapConfig.locations.forEach(loc => {
             stationLocations[loc.varname] = loc;
         });
 
+        // Hapus log lama sebelum menambahkan yang baru
+        logClusterGroup.clearLayers();
+
         // Proses setiap data log
         data.forEach(logItem => {
-            // Cari data stasiun berdasarkan 'radio_id' dari log
             const station = stationLocations[logItem.radio_id];
 
-            // Jika stasiunnya ketemu di mapConfig
-            if (station) {
-                // Ambil Lat & Lon dari data stasiun, bukan dari log
-                const lat = station.latitude;
-                const lon = station.longitude;
+            // Cek jika stasiunnya ada DAN data radial/distance lengkap
+            if (station && logItem.radial != null && logItem.distance != null) {
+                
+                // 1. Hitung koordinat asli dari log
+                const destination = calculateDestinationPoint(
+                    station.latitude, 
+                    station.longitude, 
+                    logItem.radial, 
+                    logItem.distance
+                );
 
-                // Buat marker
-                const marker = L.marker([lat, lon]);
+                // 2. Tentukan warna berdasarkan readability
+                const markerColor = getReadabilityColor(logItem.readibility);
 
-                // Buat konten untuk popup
+                // 3. Buat marker di lokasi yang sudah dihitung
+                const logMarker = L.circleMarker(destination, {
+                    radius: 6,
+                    color: markerColor,
+                    fillColor: markerColor,
+                    fillOpacity: 0.9
+                });
+
+                // 4. Buat konten untuk popup
                 const popupContent = `
-                    <b>Stasiun: ${station.name}</b><br>
-                    Callsign: ${logItem.callsign}<br>
-                    Readability: ${logItem.readibility}
+                    <b>Log dari: ${station.name}</b><hr style="margin: 5px 0;">
+                    <b>Callsign:</b> ${logItem.callsign || '-'}<br>
+                    <b>Level:</b> FL${logItem.level || '-'}<br>
+                    <b>Readability:</b> ${logItem.readibility || '-'}<br>
+                    <b>Radial:</b> ${logItem.radial}°<br>
+                    <b>Distance:</b> ${logItem.distance}nm
                 `;
-                marker.bindPopup(popupContent);
+                logMarker.bindPopup(popupContent);
 
-                // Tambahkan ke layer cluster
-                stationClusterGroup.addLayer(marker);
+                // 5. Tambahkan ke layer khusus log (logClusterGroup)
+                logClusterGroup.addLayer(logMarker);
             }
         });
     })

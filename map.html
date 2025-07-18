@@ -511,7 +511,12 @@ const mapConfig = {
 
 
 // --- INISIALISASI PETA & VARIABEL GLOBAL ---
-const map = L.map("map").setView([-2.5, 117.0], 5);
+const map = L.map("map", {
+    zoomControl: false 
+}).setView([-2.5, 117.0], 5);
+
+// 2. Tambahkan lagi kontrol zoom di posisi baru (kiri bawah)
+L.control.zoom({ position: 'bottomleft' }).addTo(map);
 const stationClusterGroup = L.markerClusterGroup();
 const logClusterGroup = L.markerClusterGroup();
 let polygonLayers = {};

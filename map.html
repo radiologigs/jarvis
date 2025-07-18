@@ -570,10 +570,10 @@ function formatDate(date) {
 function loadDynamicData() {
     const apiUrl = 'https://script.google.com/macros/s/AKfycbysOsW_I0X2UxA6Gl0KwfFtFwG39imuqM4qfPPDl_alNh1TBWBIPB9kbbYvbKU3OZE/exec';
 
-   fetch(apiUrl)
+  fetch(apiUrl)
     .then(response => response.json())
     .then(data => {
-        console.log("Data dari Google Sheet:", data);
+        console.log("Data log dari Google Sheet:", data);
 
         // Buat 'kamus' untuk mencari lokasi stasiun dengan cepat
         const stationLocations = {};
@@ -581,36 +581,28 @@ function loadDynamicData() {
             stationLocations[loc.varname] = loc;
         });
 
-        // Hapus log lama sebelum menambahkan yang baru
+        // Kosongkan data log lama sebelum menambahkan yang baru
         logClusterGroup.clearLayers();
+        logMarkersBySector = {}; // Reset data log per sektor
 
         // Proses setiap data log
         data.forEach(logItem => {
             const station = stationLocations[logItem.radio_id];
 
-            // Cek jika stasiunnya ada DAN data radial/distance lengkap
             if (station && logItem.radial != null && logItem.distance != null) {
-                
-                // 1. Hitung koordinat asli dari log
                 const destination = calculateDestinationPoint(
                     station.latitude, 
                     station.longitude, 
                     logItem.radial, 
                     logItem.distance
                 );
-
-                // 2. Tentukan warna berdasarkan readability
                 const markerColor = getReadabilityColor(logItem.readibility);
-
-                // 3. Buat marker di lokasi yang sudah dihitung
                 const logMarker = L.circleMarker(destination, {
                     radius: 6,
                     color: markerColor,
                     fillColor: markerColor,
                     fillOpacity: 0.9
                 });
-
-                // 4. Buat konten untuk popup
                 const popupContent = `
                     <b>Log dari: ${station.name}</b><hr style="margin: 5px 0;">
                     <b>Callsign:</b> ${logItem.callsign || '-'}<br>
@@ -621,10 +613,22 @@ function loadDynamicData() {
                 `;
                 logMarker.bindPopup(popupContent);
 
-                // 5. Tambahkan ke layer khusus log (logClusterGroup)
-                logClusterGroup.addLayer(logMarker);
+                // --- BAGIAN PENTING ADA DI SINI ---
+                // 1. Dapatkan nama sektor dari stasiunnya
+                const sector = station.sector;
+
+                // 2. Buat wadah untuk sektor ini jika belum ada
+                if (!logMarkersBySector[sector]) {
+                    logMarkersBySector[sector] = [];
+                }
+
+                // 3. Masukkan marker log ke dalam wadah sektor yang sesuai
+                logMarkersBySector[sector].push(logMarker);
             }
         });
+
+        // 4. Panggil ulang fungsi filter untuk menerapkan filter ke data log yang baru
+        filterByDropdown();
     })
     .catch(error => console.error('Gagal mengambil data:', error));
 }

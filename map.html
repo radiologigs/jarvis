@@ -585,21 +585,40 @@ function loadDynamicData() {
         .then(data => {
             console.log("Data dari Google Sheet:", data); // Untuk debugging
             
-            data.forEach(item => {
-                const lat = item.Latitude;
-                const lon = item.Longitude;
-                const nama = item.Nama;
+           // Buat 'kamus' untuk mencari lokasi stasiun dengan cepat
+        const stationLocations = {};
+        mapConfig.locations.forEach(loc => {
+            stationLocations[loc.varname] = loc;
+        });
 
-                if (lat && lon) {
-                    const marker = L.marker([lat, lon]);
-                    if (nama) {
-                        marker.bindPopup(`<b>${nama}</b> (From AppSheet)`);
-                    }
-                    stationClusterGroup.addLayer(marker);
-                }
-            });
-        })
-        .catch(error => console.error('Gagal mengambil data dari Google Sheet:', error));
+        // Proses setiap data log
+        data.forEach(logItem => {
+            // Cari data stasiun berdasarkan 'radio_id' dari log
+            const station = stationLocations[logItem.radio_id];
+
+            // Jika stasiunnya ketemu di mapConfig
+            if (station) {
+                // Ambil Lat & Lon dari data stasiun, bukan dari log
+                const lat = station.latitude;
+                const lon = station.longitude;
+
+                // Buat marker
+                const marker = L.marker([lat, lon]);
+
+                // Buat konten untuk popup
+                const popupContent = `
+                    <b>Stasiun: ${station.name}</b><br>
+                    Callsign: ${logItem.callsign}<br>
+                    Readability: ${logItem.readibility}
+                `;
+                marker.bindPopup(popupContent);
+
+                // Tambahkan ke layer cluster
+                stationClusterGroup.addLayer(marker);
+            }
+        });
+    })
+    .catch(error => console.error('Gagal mengambil data:', error));
 }
 
 /** Menginisialisasi peta, layer, dan UI listeners */

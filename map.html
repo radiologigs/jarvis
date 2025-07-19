@@ -117,18 +117,24 @@
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC-qCWLhkjYc9IYNztAWPmPatlxhCqKzR8"></script>
 
 <div id="controls">
+    <strong>Filter Sektor:</strong>
+    <select id="sector-dropdown" class="form-control" onchange="filterByDropdown()">
+        <option value="all">-- Semua Sektor --</option>
+    </select>
 
-  <strong>Filter Sektor:</strong>
-  <select id="sector-dropdown" class="form-control" onchange="filterByDropdown()">
-    <option value="all">-- Semua Sektor --</option>
-  </select>
-  
-<strong style="margin-top: 10px; display: block;">Pencarian Data:</strong>
-  <input type="text" id="search-box" class="form-control" placeholder="Cari lokasi, callsign, sektor...">
+    <strong style="margin-top: 10px; display: block;">Pencarian Data:</strong>
+    <input type="text" id="search-box" class="form-control" placeholder="Cari lokasi, callsign, sektor...">
 
-  <div class="text-center" style="margin-top:8px;">
-        </div>
-  </div>
+    <div class="text-center" style="margin-top:8px;">
+        <button class="btn btn-sm btn-primary" onclick="selectAll(true)">Expand All</button>
+        <button class="btn btn-sm btn-danger" onclick="selectAll(false)">Collapse All</button>
+    </div>
+
+    <hr style="margin:10px 0;">
+    <label for="file-upload">Upload Log (.xlsx):</label>
+    <input type="file" id="file-upload" accept=".xlsx" class="form-control">
+    <div id="upload-status" class="text-center">Pilih file untuk memuat log.</div>
+</div>
 
     <button class="btn btn-sm btn-primary" onclick="selectAll(true)">Expand All</button>
 

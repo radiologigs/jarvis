@@ -49,10 +49,10 @@
     "UJKT": "Primary: 135.9 MHz<br>Secondary: 132.15 MHz"
   },
   "sectorColors": {
-    "UNTA": "#FF0000", "UMDN": "#00AA00", "UTPD": "purple", "UBAC": "orange",
-    "UIOS": "darkred", "UTPG": "#FF6600", "UPKU": "#0066CC", "UPKP": "#008000",
-    "UBND": "#FF33A1", "USMG": "#33A1FF", "UJOG": "#FF8C00", "UPLB": "#FFD700",
-    "UPNK": "#FF1100", "UJKT": "#6600CC"
+    "UNTA": "#566573", "UMDN": "#566573", "UTPD": "#566573", "UBAC": "#566573",
+    "UIOS": "#566573", "UTPG": "#566573", "UPKU": "#566573", "UPKP": "#566573",
+    "UBND": "#566573", "USMG": "#566573", "UJOG": "#566573", "UPLB": "#566573",
+    "UPNK": "#566573", "UJKT": "#566573"
   },
   "sectorPolygons": {
     "UNTA": [

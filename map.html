@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>JATSC Radio Visualization (JARVIS)</title>
+    <title>JATSC Radio Visual Information System (JARVIS)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css" />
@@ -200,14 +200,13 @@
         const results = fuse.search(searchTerm);
         if (results.length > 0) {
             const uniqueSectors = [...new Set(results.map(result => result.item.sector))];
-            sectorSelect.val(uniqueSectors).trigger('change');
+            sectorSelect.val(uniqueSectors).trigger('change', ['triggered_by_search']);
         } else {
-            sectorSelect.val(null).trigger('change');
+            sectorSelect.val(null).trigger('change', ['triggered_by_search']);
         }
     }
 
     function filterBySector() {
-        $('#search-box').val('');
         const selectedSectors = $('#sector-select-box').val();
         if (!selectedSectors || selectedSectors.length === 0) {
             selectAll(true);
@@ -261,7 +260,13 @@
                     allowClear: true
                 });
                 
-                $('#sector-select-box').on('change', filterBySector);
+                $('#sector-select-box').on('change', function (e, triggerSource) {
+                    if (triggerSource !== 'triggered_by_search') {
+                        $('#search-box').val('');
+                    }
+                    filterBySector();
+                });
+                
                 $('#search-box').on('keyup', performSearch);
 
                 selectAll(true);

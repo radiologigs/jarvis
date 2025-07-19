@@ -134,10 +134,7 @@
 
     function onPolygonClick(e) {
         const clickedSector = e.target.sectorName;
-        const currentSelection = $('#sector-select-box').val();
-        if (currentSelection && currentSelection.length > 0) {
-            return;
-        }
+        // Hapus kondisi pemblokiran agar bisa multi-klik
         if (selectedSectorsByClick.has(clickedSector)) {
             selectedSectorsByClick.delete(clickedSector);
         } else {
@@ -161,13 +158,13 @@
         for (const sector in mapConfig.sectorPolygons) {
             const polygon = L.polygon(mapConfig.sectorPolygons[sector], {
                 color: mapConfig.sectorColors[sector] || 'gray', weight: 2,
-                opacity: 0, fillOpacity: 0 // Mulai dengan transparan
+                ...invisibleStyle // Mulai dengan transparan
             }).bindPopup(`<b>${sector}</b><br>${mapConfig.sectorDescriptions[sector] || "No description"}`)
               .bindTooltip(sector, { sticky: true, direction: 'center', className: 'polygon-label' });
             
             polygon.sectorName = sector;
             polygon.on('click', onPolygonClick);
-            polygon.addTo(map); // Langsung tambahkan ke peta
+            polygon.addTo(map);
             polygonLayers[sector] = polygon;
         }
 
@@ -211,8 +208,10 @@
     }
 
     function filterBySector() {
+        // Saat filter sektor berubah, HAPUS TEXT di search box
         $('#search-box').val('');
         selectedSectorsByClick.clear();
+        
         const selectedSectors = $('#sector-select-box').val();
         if (!selectedSectors || selectedSectors.length === 0) {
             selectAll(true);
@@ -266,6 +265,7 @@
                     placeholder: 'Pilih satu/lebih sektor...',
                     allowClear: true
                 });
+                
                 $('#sector-select-box').on('change', filterBySector);
                 $('#search-box').on('keyup', performSearch);
 

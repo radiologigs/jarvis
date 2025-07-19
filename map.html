@@ -107,6 +107,7 @@
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.min.js"></script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
@@ -115,20 +116,19 @@
 
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC-qCWLhkjYc9IYNztAWPmPatlxhCqKzR8"></script>
 
-
 <div id="controls">
 
   <strong>Filter Sektor:</strong>
-
   <select id="sector-dropdown" class="form-control" onchange="filterByDropdown()">
-
     <option value="all">-- Semua Sektor --</option>
-
   </select>
-
-
+  
+<strong style="margin-top: 10px; display: block;">Pencarian Data:</strong>
+  <input type="text" id="search-box" class="form-control" placeholder="Cari lokasi, callsign, sektor...">
 
   <div class="text-center" style="margin-top:8px;">
+        </div>
+  </div>
 
     <button class="btn btn-sm btn-primary" onclick="selectAll(true)">Expand All</button>
 
@@ -156,6 +156,7 @@ let sectorMarkers = {};
 let logMarkersBySector = {};
 let radioLogs = {};
 let mapConfig;
+let fuse;
 
 // --- FUNGSI-FUNGSI HELPER ---
 
@@ -323,11 +324,68 @@ const dropdownOptions = [];
     });
     $('#sector-dropdown').append(dropdownOptions.join(''));
 }
+  
+  function buildSearchIndex() {
+    // 1. Siapkan data gabungan dari lokasi dan log
+    const searchData = mapConfig.locations.map(loc => {
+        const logs = radioLogs[loc.varname.toUpperCase()] || [];
+        return {
+            ...loc, // Ambil semua data lokasi (name, varname, sector, dll)
+            logs: logs, // Tambahkan data log yang relevan
+            _marker: loc._marker // Simpan referensi ke marker Leaflet-nya
+        };
+    });
+
+    // 2. Konfigurasi Fuse.js
+    const options = {
+        includeScore: true,
+        threshold: 0.4, // Atur tingkat toleransi (0.0 = cocok persis, 1.0 = super longgar)
+        keys: [
+            'name',          // Cari di nama lokasi (e.g., "Cirebon")
+            'varname',       // Cari di varname (e.g., "CRB UJOG")
+            'sector',        // Cari di nama sektor (e.g., "UJOG")
+            'logs.callsign'  // Cari di dalam data log (e.g., "AIC123")
+        ]
+    };
+
+    // 3. Buat instance Fuse dengan data dan opsi
+    fuse = new Fuse(searchData, options);
+}
+
+  function performSearch() {
+    const searchTerm = document.getElementById('search-box').value;
+
+    // Jika search box kosong, tampilkan semua marker
+    if (searchTerm.trim() === '') {
+        markerClusterGroup.clearLayers();
+        mapConfig.locations.forEach(loc => markerClusterGroup.addLayer(loc._marker));
+        return;
+    }
+
+    // Lakukan pencarian dengan Fuse.js
+    const results = fuse.search(searchTerm);
+
+    // Kosongkan peta dari semua marker
+    markerClusterGroup.clearLayers();
+
+    // Ambil hanya marker dari hasil pencarian dan tambahkan kembali ke peta
+    const resultMarkers = results.map(result => result.item._marker);
+    if (resultMarkers.length > 0) {
+        markerClusterGroup.addLayers(resultMarkers);
+
+        // (Bonus) Jika hanya ada 1 hasil, zoom ke lokasi tersebut
+        if (resultMarkers.length === 1) {
+            map.setView(resultMarkers[0].getLatLng(), 13);
+            resultMarkers[0].openPopup();
+        }
+    }
+}
 
 /** Menyiapkan semua event listener untuk UI */
 function setupUIListeners() {
     $('#file-upload').on('change', handleFileUpload);
     // Listener untuk dropdown diletakkan di HTML: onchange="filterByDropdown()"
+  $('#search-box').on('keyup', performSearch);
 }
 
 // --- LOGIKA FILTER DAN TOGGLE ---
@@ -445,6 +503,7 @@ function handleFileUpload(event) {
             });
             
             updateMarkerPopupsWithLogs();
+          buildSearchIndex();
             statusDiv.text(`Visualisasi ${jsonData.length} log berhasil!`).css('color', 'green');
             
             // MODIFIKASI 3: Panggil ulang filter untuk menyegarkan tampilan log
@@ -498,6 +557,7 @@ $(document).ready(function() {
 
       mapConfig = configData;
       initializeApp(configData);
+      buildSearchIndex();
     })
     .catch(error => {
       console.error('Gagal memuat file konfigurasi:', error);

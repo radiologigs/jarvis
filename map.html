@@ -216,11 +216,20 @@ function loadDynamicData() {
 
         // Kosongkan data log lama sebelum menambahkan yang baru
         logClusterGroup.clearLayers();
-        logMarkersBySector = {}; // Reset data log per sektor
+        logMarkersBySector = {};
+        radioLogs = {};
 
         // Proses setiap data log
         data.forEach(logItem => {
             const station = stationLocations[logItem.radio_id];
+
+          const stationVarname = (logItem.radio_id || "").trim().toUpperCase();
+                if (stationVarname) {
+                    if (!radioLogs[stationVarname]) {
+                        radioLogs[stationVarname] = [];
+                    }
+                    radioLogs[stationVarname].push(logItem);
+                }
 
             if (station && logItem.radial != null && logItem.distance != null) {
                 const destination = calculateDestinationPoint(
@@ -268,16 +277,17 @@ function loadDynamicData() {
 
 /** Menginisialisasi peta, layer, dan UI listeners */
 function initializeApp() {
-   L.gridLayer.googleMutant({
-        type: 'roadmap' // atau 'satellite', 'hybrid', 'terrain'
+    L.gridLayer.googleMutant({
+        type: 'roadmap'
     }).addTo(map);
 
     map.addLayer(stationClusterGroup);
     map.addLayer(logClusterGroup);
-    createLayers();
-  loadDynamicData();
+    
+    // Panggil fungsi-fungsi ini dari blok fetch utama
+    // createLayers(); 
+    // loadDynamicData();
     setupUIListeners();
-    selectAll(true);
 }
 /** Membuat semua layer polygon dan marker dari mapConfig */
 function createLayers() {
@@ -545,18 +555,22 @@ function updateMarkerPopupsWithLogs() {
 
 // --- JALANKAN APLIKASI ---
 $(document).ready(function() {
-  fetch('config.json') 
-    .then(response => response.json()) 
-    .then(configData => {
-
-      mapConfig = configData;
-      initializeApp(configData);
-      buildSearchIndex();
-    })
-    .catch(error => {
-      console.error('Gagal memuat file konfigurasi:', error);
-      document.getElementById('map').innerHTML = '<h2>Error: Gagal memuat data peta.</h2>';
-    });
+    fetch('config.json')
+        .then(response => response.json())
+        .then(configData => {
+            mapConfig = configData;
+            
+            // Panggil semua fungsi yang butuh mapConfig di sini
+            initializeApp();
+            createLayers();
+            selectAll(true); // Tampilkan semua stasiun & poligon di awal
+            loadDynamicData(); // Mulai ambil data log dari Google Sheet
+            buildSearchIndex(); // Bangun indeks awal (hanya stasiun)
+        })
+        .catch(error => {
+            console.error('Gagal memuat file konfigurasi:', error);
+            document.getElementById('map').innerHTML = '<h2>Error: Gagal memuat data peta.</h2>';
+        });
 });
 </script>
 </body>

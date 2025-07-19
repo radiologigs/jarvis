@@ -1,7 +1,7 @@
 // --- KONFIGURASI PETA DAN DATA ---
 
-const mapConfig = {
-    locations: [
+{
+"locations": [
         { name: "Cirebon", latitude: -6.698261448, longitude: 108.55981815, varname: "CRB UJOG", sector: "UJOG" },
         { name: "Pangandaran", latitude: -7.668601524, longitude: 108.72431672, varname: "PGN", sector: "UJOG" },
         { name: "Palembang", latitude: -2.894326494, longitude: 104.701946, varname: "PLB", sector: "UPLB" },
@@ -34,7 +34,7 @@ const mapConfig = {
         { name: "Pontianak", latitude: 0.131439999, longitude: 109.4089966, varname: "PNK", sector: "UPNK" },
         { name: "Ketapang", latitude: -1.816029, longitude: 109.961583, varname: "KTP", sector: "UPNK" }
     ],
-    sectorDescriptions: {
+"sectorDescriptions": {
         "UNTA": "Primary Frequency: 134.025 MHz",
         "UMDN": "Primary: 133.2 MHz<br>Secondary: 133.45 MHz",
         "UTPD": "Primary: 125.7 MHz<br>Secondary: 133.9 MHz",
@@ -50,13 +50,13 @@ const mapConfig = {
         "UPNK": "Primary: 133.5 MHz<br>Secondary: 134.45 MHz",
         "UJKT": "Primary: 135.9 MHz<br>Secondary: 132.15 MHz"
     },
-    sectorColors: {
+"sectorColors": {
         "UNTA": "#FF0000", "UMDN": "#00AA00", "UTPD": "purple", "UBAC": "orange",
         "UIOS": "darkred", "UTPG": "#FF6600", "UPKU": "#0066CC", "UPKP": "#008000",
         "UBND": "#FF33A1", "USMG": "#33A1FF", "UJOG": "#FF8C00", "UPLB": "#FFD700",
         "UPNK": "#FF1100", "UJKT": "#6600CC"
     },
-    sectorPolygons: {
+"sectorPolygons": {
         "UNTA": [
             [2.89,105.233611],[3.248056,105.438611],[3.290833,105.499722],
             [3.5125,105.858333],[4.22,107.295278],[4.638889,107.554167],
@@ -362,4 +362,4 @@ const mapConfig = {
             [-0.113333333,107.7283333]
         ]
     }
-};
+}

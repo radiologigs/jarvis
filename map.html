@@ -3,129 +3,52 @@
 <html>
 
 <head>
-
-  <meta charset="utf-8" />
-
-  <title>JATSC Radio Visualization (JARVIS)</title>
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css" />
-
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
-
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/MarkerCluster.css"/>
-
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/MarkerCluster.Default.css"/>
-
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"/>
-
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
-
-  <style>
-
-    html, body, #map { height: 100%; margin: 0; padding: 0; }
-
-    #controls {
-
-      position: absolute; top: 10px; right: 10px;
-
-      background: white; padding: 10px; z-index: 1000;
-
-      border-radius: 6px; min-width: 200px; max-width: 250px;
-
-    }
-
-    .polygon-label {
-
-      font-weight: bold; color: #000; background-color: rgba(255,255,255,0.85);
-
-      padding: 2px 5px; border-radius: 4px; font-size: 12px;
-
-      box-shadow: 0 0 2px rgba(0,0,0,0.3);
-
-    }
-
-/* Mengecilkan padding utama panel kontrol */
-#controls {
-    padding: 8px;
-    min-width: 150px; /* Lebar minimum bisa dikurangi */
-}
-
-/* Mengecilkan semua teks judul/label */
-#controls strong, 
-#controls label {
-    font-size: 13px;
-    margin-bottom: 4px; /* Mengurangi jarak bawah */
-}
-
-/* Mengecilkan dropdown */
-#sector-dropdown {
-    height: 30px;
-    padding: 4px 8px;
-    font-size: 12px;
-}
-
-/* Mengecilkan tombol Expand/Collapse */
-#controls .btn {
-    padding: 3px 8px;
-    font-size: 12px;
-}
-
-/* Mengecilkan input file */
-#controls #file-upload {
-    font-size: 12px;
-    height: auto; /* Biarkan tinggi menyesuaikan */
-    padding: 5px;
-}
-
-/* Mengurangi jarak garis pemisah */
-#controls {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 1000;
-    background: white;
-    padding: 8px;
-    border-radius: 6px;
-    box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-    
-    /* Bagian untuk ukuran dinamis */
-    width: 45vw; /* Lebar 45% dari lebar viewport/layar */
-    max-width: 220px; /* Lebar maksimum 220px di layar besar */
-    min-width: 160px; /* Lebar minimum 160px di layar kecil */
-    }
-
-  </style>
-
+    <meta charset="utf-8" />
+    <title>JATSC Radio Visualization (JARVIS)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/MarkerCluster.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/MarkerCluster.Default.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
+    <style>
+        html, body, #map { height: 100%; margin: 0; padding: 0; }
+        .polygon-label {
+            font-weight: bold; color: #000; background-color: rgba(255,255,255,0.85);
+            padding: 2px 5px; border-radius: 4px; font-size: 12px;
+            box-shadow: 0 0 2px rgba(0,0,0,0.3);
+        }
+        #controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 8px;
+            border-radius: 6px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+            width: 45vw;
+            max-width: 220px;
+            min-width: 160px;
+        }
+        #controls strong, #controls label { font-size: 13px; margin-bottom: 4px; }
+        #sector-dropdown { height: 30px; padding: 4px 8px; font-size: 12px; }
+        #controls .btn { padding: 3px 8px; font-size: 12px; }
+        #controls #file-upload { font-size: 12px; height: auto; padding: 5px; }
+    </style>
 </head>
 
 <body>
-
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.min.js"></script>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
-<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://unpkg.com/leaflet.gridlayer.googlemutant@latest/dist/Leaflet.GoogleMutant.js"></script>
-
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC-qCWLhkjYc9IYNztAWPmPatlxhCqKzR8"></script>
-
-<div id="controls">
-    <strong>Pencarian & Filter Sektor:</strong> <input type="text" id="search-box" list="sector-list" class="form-control" placeholder="Cari atau pilih sektor...">
-
-    <datalist id="sector-list">
-        </datalist>
-
-    <div class="text-center" style="margin-top:8px;">
-        <button class="btn btn-sm btn-primary" onclick="selectAll(true)">Expand All</button>
-        <button class="btn btn-sm btn-danger" onclick="selectAll(false)">Collapse All</button>
+    <div id="controls">
+        <strong>Pencarian & Filter Sektor:</strong> 
+        <input type="text" id="search-box" list="sector-list" class="form-control" placeholder="Cari atau pilih sektor...">
+        <datalist id="sector-list"></datalist>
+        <div class="text-center" style="margin-top:8px;">
+            <button class="btn btn-sm btn-primary" onclick="selectAll(true)">Expand All</button>
+            <button class="btn btn-sm btn-danger" onclick="selectAll(false)">Collapse All</button>
+        </div>
     </div>
-</div>
 
 <div id="map"></div>
 
@@ -136,7 +59,6 @@ const map = L.map("map", {
     zoomControl: false 
 }).setView([-2.5, 117.0], 5);
 
-// 2. Tambahkan lagi kontrol zoom di posisi baru (kiri bawah)
 L.control.zoom({ position: 'bottomleft' }).addTo(map);
 const stationClusterGroup = L.markerClusterGroup();
 const logClusterGroup = L.markerClusterGroup();
@@ -148,53 +70,36 @@ let mapConfig;
 let fuse;
 
 // --- FUNGSI-FUNGSI HELPER ---
-
 function calculateDestinationPoint(lat, lon, bearing, distanceNm) {
-    const R = 6371; // Radius Bumi dalam km
-    const distanceKm = distanceNm * 1.852; // Konversi mil laut ke km
-
+    const R = 6371;
+    const distanceKm = distanceNm * 1.852;
     const latRad = (lat * Math.PI) / 180;
     const lonRad = (lon * Math.PI) / 180;
     const bearingRad = (bearing * Math.PI) / 180;
-
-    const lat2Rad = Math.asin(Math.sin(latRad) * Math.cos(distanceKm / R) +
-        Math.cos(latRad) * Math.sin(distanceKm / R) * Math.cos(bearingRad));
-
-    const lon2Rad = lonRad + Math.atan2(Math.sin(bearingRad) * Math.sin(distanceKm / R) * Math.cos(latRad),
-        Math.cos(distanceKm / R) - Math.sin(latRad) * Math.sin(lat2Rad));
-
+    const lat2Rad = Math.asin(Math.sin(latRad) * Math.cos(distanceKm / R) + Math.cos(latRad) * Math.sin(distanceKm / R) * Math.cos(bearingRad));
+    const lon2Rad = lonRad + Math.atan2(Math.sin(bearingRad) * Math.sin(distanceKm / R) * Math.cos(latRad), Math.cos(distanceKm / R) - Math.sin(latRad) * Math.sin(lat2Rad));
     const lat2 = (lat2Rad * 180) / Math.PI;
     const lon2 = (lon2Rad * 180) / Math.PI;
-
     return [lat2, lon2];
 }
 
 function getReadabilityColor(readability) {
-    const r = parseInt(readability, 10); // Pastikan nilainya angka
-
-    if (r >= 4) { // Nilai 4 dan 5
-        return 'green';
-    } else if (r >= 2) { // Nilai 2 dan 3
-        return 'yellow';
-    } else if (r === 1) { // Nilai 1
-        return 'red';
-    } else {
-        return 'grey'; // Warna default jika nilainya aneh/kosong
-    }
+    const r = parseInt(readability, 10);
+    if (r >= 4) return 'green';
+    if (r >= 2) return 'yellow';
+    if (r >= 0) return 'red';
+    return 'grey';
 }
 
 function formatDate(date) {
-    if (!(date instanceof Date) || isNaN(date)) {
-        return date; // Kembalikan apa adanya jika tidak valid
-    }
+    if (!(date instanceof Date) || isNaN(date)) return date;
     const day = date.getDate();
-    const month = date.getMonth() + 1; // getMonth() dimulai dari 0
+    const month = date.getMonth() + 1;
     const year = date.getFullYear();
     return `${day}/${month}/${year}`;
 }
-  
-  // --- FUNGSI-FUNGSI UTAMA APLIKASI ---
-/** Fungsi untuk mengambil data dinamis dari Google Sheet */
+ 
+// --- FUNGSI-FUNGSI UTAMA APLIKASI ---
 function loadDynamicData() {
     const apiUrl = 'https://script.google.com/macros/s/AKfycbysOsW_I0X2UxA6Gl0KwfFtFwG39imuqM4qfPPDl_alNh1TBWBIPB9kbbYvbKU3OZE/exec';
 
@@ -236,19 +141,13 @@ function loadDynamicData() {
                 }
             });
 
-            // Panggil filter untuk menerapkan ke data log yang baru
-            filterByDropdown();
-
-            // TAMBAHAN: Update popup stasiun dengan data log baru
+            selectAll(true); // <-- Tampilkan log yang baru dimuat
             updateMarkerPopupsWithLogs();
-
-            // Bangun ulang indeks pencarian agar log baru bisa dicari
             buildSearchIndex();
         })
         .catch(error => console.error('Gagal mengambil data:', error));
 }
 
-/** Menginisialisasi peta, layer, dan UI listeners */
 function initializeApp() {
     L.gridLayer.googleMutant({
         type: 'roadmap'
@@ -256,18 +155,12 @@ function initializeApp() {
 
     map.addLayer(stationClusterGroup);
     map.addLayer(logClusterGroup);
-    
-    // Panggil fungsi-fungsi ini dari blok fetch utama
-    // createLayers(); 
-    // loadDynamicData();
     setupUIListeners();
 }
-/** Membuat semua layer polygon dan marker dari mapConfig */
+
 function createLayers() {
     const sectors = new Set();
-const dropdownOptions = [];
 
-    // Proses marker dan kumpulkan nama sektor unik
     mapConfig.locations.forEach(loc => {
         sectors.add(loc.sector);
         
@@ -279,11 +172,10 @@ const dropdownOptions = [];
         const marker = L.marker([loc.latitude, loc.longitude], { icon: icon });
         
         marker.bindTooltip(loc.name, { sticky: true });
-        loc._marker = marker; // Simpan referensi marker
+        loc._marker = marker;
         sectorMarkers[loc.sector].push(marker);
     });
 
-    // Buat layer polygon
     for (const sector in mapConfig.sectorPolygons) {
         const polygon = L.polygon(mapConfig.sectorPolygons[sector], {
             color: mapConfig.sectorColors[sector] || 'gray',
@@ -295,102 +187,60 @@ const dropdownOptions = [];
         polygonLayers[sector] = polygon;
     }
 
-    // Isi dropdown dari daftar sektor yang unik
-const sectors = new Set();
-    mapConfig.locations.forEach(loc => {
-        sectors.add(loc.sector);
-    });
-
-    // Ambil elemen datalist
     const sectorList = document.getElementById('sector-list');
-    
-    // Hapus opsi lama jika ada (untuk pembaruan di masa depan)
-    sectorList.innerHTML = ''; 
-
-    // Isi datalist dengan opsi sektor yang unik
+    sectorList.innerHTML = '';
     sectors.forEach(sec => {
         const option = document.createElement('option');
         option.value = sec;
         sectorList.appendChild(option);
     });
 }
-  
+ 
 function buildSearchIndex() {
-    // 1. Siapkan data gabungan dari lokasi, log, dan deskripsi sektor
     const searchData = mapConfig.locations.map(loc => {
         const logs = radioLogs[loc.varname.toUpperCase()] || [];
-        // Ambil deskripsi/frekuensi untuk sektor ini
         const frequencyInfo = mapConfig.sectorDescriptions[loc.sector] || '';
         
         return {
             ...loc,
             logs: logs,
-            frequency: frequencyInfo, // <-- TAMBAHAN PENTING
+            frequency: frequencyInfo,
             _marker: loc._marker
         };
     });
 
-    // 2. Konfigurasi Fuse.js
     const options = {
         includeScore: true,
         threshold: 0.3,
-        keys: [
-            'name',
-            'varname',
-            'sector',
-            'logs.callsign',
-            'frequency' // <-- TAMBAHAN PENTING
-        ]
+        keys: ['name', 'varname', 'sector', 'logs.callsign', 'frequency']
     };
 
-    // 3. Buat instance Fuse dengan data dan opsi
     fuse = new Fuse(searchData, options);
     console.log("Search index updated.");
 }
 
 function performSearch() {
     const searchTerm = document.getElementById('search-box').value;
-
-    // Jika search box kosong, kembalikan tampilan ke kondisi filter dropdown
+    
     if (searchTerm.trim() === '') {
-        filterByDropdown();
+        selectAll(true);
         return;
     }
 
     const results = fuse.search(searchTerm);
-
-    // Sembunyikan semua layer terlebih dahulu
     hideAllLayers();
 
     if (results.length > 0) {
-        // 1. Kumpulkan semua sektor unik dari hasil pencarian
         const uniqueSectors = [...new Set(results.map(result => result.item.sector))];
-
-        // 2. Tampilkan semua layer (poligon, stasiun, log) untuk setiap sektor yang cocok
         uniqueSectors.forEach(sector => {
             toggleSector(sector, true);
         });
-
-        // 3. (Bonus) Update dropdown untuk sinkronisasi
-        if (uniqueSectors.length === 1) {
-            $('#sector-dropdown').val(uniqueSectors[0]);
-        } else {
-            $('#sector-dropdown').val('all');
-        }
-    } else {
-        // Jika tidak ada hasil, pastikan dropdown kembali ke "Semua Sektor"
-        $('#sector-dropdown').val('all');
     }
 }
 
-/** Menyiapkan semua event listener untuk UI */
 function setupUIListeners() {
-    $('#file-upload').on('change', handleFileUpload);
-    // Listener untuk dropdown diletakkan di HTML: onchange="filterByDropdown()"
-  $('#search-box').on('keyup', performSearch);
+    $('#search-box').on('keyup', performSearch);
 }
-
-// --- LOGIKA FILTER DAN TOGGLE ---
 
 function toggleSector(sector, show) {
     if (sectorMarkers[sector]) {
@@ -401,108 +251,21 @@ function toggleSector(sector, show) {
     if (polygonLayers[sector]) {
         show ? map.addLayer(polygonLayers[sector]) : map.removeLayer(polygonLayers[sector]);
     }
- if (logMarkersBySector[sector]) {
+    if (logMarkersBySector[sector]) {
         logMarkersBySector[sector].forEach(marker => {
             show ? logClusterGroup.addLayer(marker) : logClusterGroup.removeLayer(marker);
         });
     }
 }
 
-// GANTI DENGAN KODE INI
 function selectAll(state) {
-    if (state === true) { // Untuk tombol "Expand All"
-        Object.keys(sectorMarkers).forEach(sector => toggleSector(sector, true));
-    } else { // Untuk tombol "Collapse All"
-        Object.keys(sectorMarkers).forEach(sector => toggleSector(sector, false));
-    }
-    
-    // Setelah di-expand atau di-collapse, reset dropdown ke "Semua Sektor"
-    $('#sector-dropdown').val('all');
+    Object.keys(sectorMarkers).forEach(sector => toggleSector(sector, state));
 }
 
-  function hideAllLayers() {
+function hideAllLayers() {
     Object.keys(sectorMarkers).forEach(sector => toggleSector(sector, false));
 }
 
-// --- LOGIKA UPLOAD & PROSES FILE LOG ---
-
-function handleFileUpload(event) {
-    const file = event.target.files[0];
-    const statusDiv = $('#upload-status');
-    if (!file) return;
-
-    statusDiv.text("Memproses file...").css('color', 'blue');
-    
-    logClusterGroup.clearLayers(); 
-    radioLogs = {};
-    logMarkersBySector = {}; // Reset data log per sektor
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
- const stationsMap = {};
-            mapConfig.locations.forEach(loc => {
-                stationsMap[loc.varname.toUpperCase()] = loc;
-            });
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-            const sheetName = workbook.SheetNames[0];
-            const sheet = workbook.Sheets[sheetName];
-            const jsonData = XLSX.utils.sheet_to_json(sheet);
-
-            jsonData.forEach(log => {
-                const stationVarname = (log.radio_id || "").trim().toUpperCase();
-
- const station = stationsMap[stationVarname];
-
-                if (stationVarname && !radioLogs[stationVarname]) {
-                    radioLogs[stationVarname] = [];
-                }
-                if(stationVarname) radioLogs[stationVarname].push(log);
-                
-                if (station && log.radial != null && log.distance != null) {
-                    const destination = calculateDestinationPoint(station.latitude, station.longitude, log.radial, log.distance);
-                    const markerColor = getReadabilityColor(log.readibility);
-
-                    const logMarker = L.circleMarker(destination, {
-                        radius: 6,
-                        color: markerColor,
-                        fillColor: markerColor,
-                        fillOpacity: 0.9
-                    });
-                    
-                    const popupContent = `
-                        <b>Log Entry (From: ${station.name})</b><hr style="margin: 5px 0;">
-                        <b>Callsign:</b> ${log.callsign || '-'}<br>
-                        <b>Level:</b> FL${log.level || '-'}<br>
-                        <b>Via:</b> ${log.checkpoint || '-'}<br>
-                        <b>Readability:</b> ${log.readibility || '-'}<br>
-                    `;
-                    logMarker.bindPopup(popupContent);
-
-                    // MODIFIKASI 2: Simpan marker ke object logMarkersBySector
-                    const sector = station.sector;
-                    if (!logMarkersBySector[sector]) {
-                        logMarkersBySector[sector] = [];
-                    }
-                    logMarkersBySector[sector].push(logMarker);
-                }
-            });
-            
-            updateMarkerPopupsWithLogs();
-          buildSearchIndex();
-            statusDiv.text(`Visualisasi ${jsonData.length} log berhasil!`).css('color', 'green');
-            
-            // MODIFIKASI 3: Panggil ulang filter untuk menyegarkan tampilan log
-            filterByDropdown(); 
-
-        } catch (error) {
-            console.error("Error saat memproses file:", error);
-            statusDiv.text("Error: Gagal memproses file.").css('color', 'red');
-        }
-    };
-    reader.readAsArrayBuffer(file);
-}
 function updateMarkerPopupsWithLogs() {
     mapConfig.locations.forEach(loc => {
         if (!loc._marker) return;
@@ -543,18 +306,14 @@ $(document).ready(function() {
         .then(configData => {
             mapConfig = configData;
             
-            // Panggil semua fungsi yang butuh mapConfig di sini
             initializeApp();
             createLayers();
-            selectAll(true); // Tampilkan semua stasiun & poligon di awal
-            loadDynamicData(); // Mulai ambil data log dari Google Sheet
-            buildSearchIndex(); // Bangun indeks awal (hanya stasiun)
+            selectAll(true);
+            loadDynamicData();
+            buildSearchIndex();
         })
         .catch(error => {
             console.error('Gagal memuat file konfigurasi:', error);
             document.getElementById('map').innerHTML = '<h2>Error: Gagal memuat data peta.</h2>';
         });
 });
-</script>
-</body>
-</html>

@@ -190,21 +190,24 @@
         console.log("Search index updated.");
     }
 
-    function performSearch() {
-        const searchTerm = document.getElementById('search-box').value;
-        const sectorSelect = $('#sector-select-box');
-        if (searchTerm.trim() === '') {
-            sectorSelect.val(null).trigger('change');
-            return;
-        }
-        const results = fuse.search(searchTerm);
-        if (results.length > 0) {
-            const uniqueSectors = [...new Set(results.map(result => result.item.sector))];
-            sectorSelect.val(uniqueSectors).trigger('change', ['triggered_by_search']);
-        } else {
-            sectorSelect.val(null).trigger('change', ['triggered_by_search']);
-        }
+function performSearch() {
+    const searchTerm = document.getElementById('search-box').value;
+    const sectorSelect = $('#sector-select-box');
+
+    if (searchTerm.trim() === '') {
+        sectorSelect.val(null).trigger('change');
+        return;
     }
+
+    const results = fuse.search(searchTerm);
+
+    if (results.length > 0) {
+        const uniqueSectors = [...new Set(results.map(result => result.item.sector))];
+        sectorSelect.val(uniqueSectors).trigger('change', ['triggered_by_search']);
+    } else {
+        alert('Data not found');
+    }
+}
 
     function filterBySector() {
         const selectedSectors = $('#sector-select-box').val();
@@ -247,37 +250,41 @@
     }
 
     // --- JALANKAN APLIKASI ---
-    $(document).ready(function() {
-        fetch('config.json')
-            .then(response => response.json())
-            .then(configData => {
-                mapConfig = configData;
-                initializeApp();
-                createLayers();
+$(document).ready(function() {
+    fetch('config.json')
+        .then(response => response.json())
+        .then(configData => {
+            mapConfig = configData;
+            initializeApp();
+            createLayers();
 
-                $('#sector-select-box').select2({
-                    placeholder: 'Pilih satu/lebih sektor...',
-                    allowClear: true
-                });
-                
-                $('#sector-select-box').on('change', function (e, triggerSource) {
-                    if (triggerSource !== 'triggered_by_search') {
-                        $('#search-box').val('');
-                    }
-                    filterBySector();
-                });
-                
-                $('#search-box').on('keyup', performSearch);
-
-                selectAll(true);
-                loadDynamicData();
-                buildSearchIndex();
-            })
-            .catch(error => {
-                console.error('Gagal memuat file konfigurasi:', error);
-                document.getElementById('map').innerHTML = '<h2>Error: Gagal memuat data peta.</h2>';
+            $('#sector-select-box').select2({
+                placeholder: 'Pilih satu/lebih sektor...',
+                allowClear: true
             });
-    });
+            
+            $('#sector-select-box').on('change', function (e, triggerSource) {
+                if (triggerSource !== 'triggered_by_search') {
+                    $('#search-box').val('');
+                }
+                filterBySector();
+            });
+            
+            $('#search-box').on('keydown', function (event) {
+                if (event.key === 'Enter' || event.keyCode === 13) {
+                    performSearch();
+                }
+            });
+
+            selectAll(true);
+            loadDynamicData();
+            buildSearchIndex();
+        })
+        .catch(error => {
+            console.error('Gagal memuat file konfigurasi:', error);
+            document.getElementById('map').innerHTML = '<h2>Error: Gagal memuat data peta.</h2>';
+        });
+});
     </script>
 </body>
 </html>

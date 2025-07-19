@@ -1,5 +1,3 @@
-// --- KONFIGURASI PETA DAN DATA ---
-
 {
 "locations": [
         { name: "Cirebon", latitude: -6.698261448, longitude: 108.55981815, varname: "CRB UJOG", sector: "UJOG" },

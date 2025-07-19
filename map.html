@@ -75,12 +75,10 @@
     let radioLogs = {};
     let mapConfig;
     let fuse;
-    let selectedSectorsByClick = new Set();
-
-    // --- FUNGSI-FUNGSI HELPER ---
     const visibleStyle = { opacity: 1, fillOpacity: 0.3 };
     const invisibleStyle = { opacity: 0, fillOpacity: 0 };
 
+    // --- FUNGSI-FUNGSI HELPER ---
     function calculateDestinationPoint(lat, lon, bearing, distanceNm) {
         const R = 6371; const distanceKm = distanceNm * 1.852;
         const latRad = (lat * Math.PI) / 180; const lonRad = (lon * Math.PI) / 180; const bearingRad = (bearing * Math.PI) / 180;
@@ -134,13 +132,15 @@
 
     function onPolygonClick(e) {
         const clickedSector = e.target.sectorName;
-        // Hapus kondisi pemblokiran agar bisa multi-klik
-        if (selectedSectorsByClick.has(clickedSector)) {
-            selectedSectorsByClick.delete(clickedSector);
+        const selectBox = $('#sector-select-box');
+        let currentSelection = selectBox.val() || [];
+        const index = currentSelection.indexOf(clickedSector);
+        if (index > -1) {
+            currentSelection.splice(index, 1);
         } else {
-            selectedSectorsByClick.add(clickedSector);
+            currentSelection.push(clickedSector);
         }
-        $('#sector-select-box').val([...selectedSectorsByClick]).trigger('change');
+        selectBox.val(currentSelection).trigger('change');
     }
     
     function createLayers() {
@@ -158,23 +158,22 @@
         for (const sector in mapConfig.sectorPolygons) {
             const polygon = L.polygon(mapConfig.sectorPolygons[sector], {
                 color: mapConfig.sectorColors[sector] || 'gray', weight: 2,
-                ...invisibleStyle // Mulai dengan transparan
+                ...invisibleStyle
             }).bindPopup(`<b>${sector}</b><br>${mapConfig.sectorDescriptions[sector] || "No description"}`)
               .bindTooltip(sector, { sticky: true, direction: 'center', className: 'polygon-label' });
-            
             polygon.sectorName = sector;
             polygon.on('click', onPolygonClick);
             polygon.addTo(map);
             polygonLayers[sector] = polygon;
         }
 
-        const searchBox = $('#sector-select-box');
-        searchBox.empty();
+        const selectBox = $('#sector-select-box');
+        selectBox.empty();
         sectors.forEach(sec => {
             const option = new Option(sec, sec, false, false);
-            searchBox.append(option);
+            selectBox.append(option);
         });
-        searchBox.trigger('change');
+        selectBox.trigger('change');
     }
 
     function buildSearchIndex() {
@@ -208,10 +207,7 @@
     }
 
     function filterBySector() {
-        // Saat filter sektor berubah, HAPUS TEXT di search box
         $('#search-box').val('');
-        selectedSectorsByClick.clear();
-        
         const selectedSectors = $('#sector-select-box').val();
         if (!selectedSectors || selectedSectors.length === 0) {
             selectAll(true);
@@ -243,7 +239,6 @@
         Object.keys(sectorMarkers).forEach(sector => toggleSector(sector, state));
         if (state) {
             $('#sector-select-box').val(null).trigger('change.select2');
-            selectedSectorsByClick.clear();
             $('#search-box').val('');
         }
     }

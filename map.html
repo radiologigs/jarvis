@@ -4,14 +4,13 @@
     <meta charset="utf-8" />
     <title>JATSC Radio Visualization (JARVIS)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/MarkerCluster.css"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/MarkerCluster.Default.css"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
-    
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
     <style>
@@ -25,12 +24,10 @@
             position: absolute; top: 10px; right: 10px; z-index: 1000;
             background: white; padding: 8px; border-radius: 6px;
             box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-            width: 45vw; max-width: 220px; min-width: 160px;
+            width: 45vw; max-width: 220px; min-width: 180px;
         }
-        #controls strong { font-size: 13px; margin-bottom: 4px; }
+        #controls strong { font-size: 13px; margin-bottom: 4px; display: block; }
         #controls .btn { padding: 3px 8px; font-size: 12px; }
-
-        /* Style tambahan untuk Select2 */
         .select2-container--default .select2-selection--multiple {
             border: 1px solid #ccc; border-radius: 4px;
         }
@@ -42,9 +39,11 @@
 
 <body>
     <div id="controls">
-        <strong>Filter Sektor:</strong> 
-        <select id="sector-search-box" class="form-control" multiple="multiple">
-        </select>
+        <strong>Filter Sektor:</strong>
+        <select id="sector-select-box" class="form-control" multiple="multiple"></select>
+
+        <strong style="margin-top: 10px;">Pencarian Data:</strong>
+        <input type="text" id="search-box" class="form-control" placeholder="Cari callsign, lokasi...">
 
         <div class="text-center" style="margin-top:8px;">
             <button class="btn btn-sm btn-primary" onclick="selectAll(true)">Expand All</button>
@@ -57,9 +56,8 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@latest/dist/Leaflet.GoogleMutant.js"></script>
@@ -76,6 +74,8 @@
     let logMarkersBySector = {};
     let radioLogs = {};
     let mapConfig;
+    let fuse;
+    let selectedSectorsByClick = new Set();
 
     // --- FUNGSI-FUNGSI HELPER ---
     function calculateDestinationPoint(lat, lon, bearing, distanceNm) {
@@ -99,9 +99,14 @@
             mapConfig.locations.forEach(loc => { stationLocations[loc.varname.toUpperCase()] = loc; });
             logClusterGroup.clearLayers();
             logMarkersBySector = {};
+            radioLogs = {};
             data.forEach(logItem => {
                 const stationVarname = (logItem.radio_id || "").trim().toUpperCase();
                 const station = stationLocations[stationVarname];
+                if (stationVarname) {
+                    if (!radioLogs[stationVarname]) { radioLogs[stationVarname] = []; }
+                    radioLogs[stationVarname].push(logItem);
+                }
                 if (station && logItem.radial != null && logItem.distance != null) {
                     const destination = calculateDestinationPoint(station.latitude, station.longitude, logItem.radial, logItem.distance);
                     const markerColor = getReadabilityColor(logItem.readibility);
@@ -113,7 +118,8 @@
                     logMarkersBySector[sector].push(logMarker);
                 }
             });
-            performMultiSectorSearch(); // Tampilkan log sesuai filter yg mungkin sudah aktif
+            filterBySector();
+            buildSearchIndex();
         }).catch(error => console.error('Gagal mengambil data:', error));
     }
 
@@ -123,6 +129,20 @@
         map.addLayer(logClusterGroup);
     }
 
+    function onPolygonClick(e) {
+        const clickedSector = e.target.sectorName;
+        const currentSelection = $('#sector-select-box').val();
+        if (currentSelection && currentSelection.length > 0) {
+            return;
+        }
+        if (selectedSectorsByClick.has(clickedSector)) {
+            selectedSectorsByClick.delete(clickedSector);
+        } else {
+            selectedSectorsByClick.add(clickedSector);
+        }
+        $('#sector-select-box').val([...selectedSectorsByClick]).trigger('change');
+    }
+    
     function createLayers() {
         const sectors = new Set();
         mapConfig.locations.forEach(loc => {
@@ -140,10 +160,13 @@
                 color: mapConfig.sectorColors[sector] || 'gray', weight: 2, fillOpacity: 0.3
             }).bindPopup(`<b>${sector}</b><br>${mapConfig.sectorDescriptions[sector] || "No description"}`)
               .bindTooltip(sector, { sticky: true, direction: 'center', className: 'polygon-label' });
+            
+            polygon.sectorName = sector;
+            polygon.on('click', onPolygonClick);
             polygonLayers[sector] = polygon;
         }
 
-        const searchBox = $('#sector-search-box');
+        const searchBox = $('#sector-select-box');
         searchBox.empty();
         sectors.forEach(sec => {
             const option = new Option(sec, sec, false, false);
@@ -152,8 +175,40 @@
         searchBox.trigger('change');
     }
 
-    function performMultiSectorSearch() {
-        const selectedSectors = $('#sector-search-box').val();
+    function buildSearchIndex() {
+        const searchData = mapConfig.locations.map(loc => {
+            const logs = radioLogs[loc.varname.toUpperCase()] || [];
+            const frequencyInfo = mapConfig.sectorDescriptions[loc.sector] || '';
+            return { ...loc, logs, frequency: frequencyInfo, _marker: loc._marker };
+        });
+        const options = {
+            includeScore: true, threshold: 0.3,
+            keys: ['name', 'varname', 'sector', 'logs.callsign', 'frequency']
+        };
+        fuse = new Fuse(searchData, options);
+        console.log("Search index updated.");
+    }
+
+    function performSearch() {
+        const searchTerm = document.getElementById('search-box').value;
+        const sectorSelect = $('#sector-select-box');
+        if (searchTerm.trim() === '') {
+            sectorSelect.val(null).trigger('change');
+            return;
+        }
+        const results = fuse.search(searchTerm);
+        if (results.length > 0) {
+            const uniqueSectors = [...new Set(results.map(result => result.item.sector))];
+            sectorSelect.val(uniqueSectors).trigger('change');
+        } else {
+            sectorSelect.val(null).trigger('change');
+        }
+    }
+
+    function filterBySector() {
+        $('#search-box').val('');
+        selectedSectorsByClick.clear();
+        const selectedSectors = $('#sector-select-box').val();
         if (!selectedSectors || selectedSectors.length === 0) {
             selectAll(true);
             return;
@@ -182,9 +237,10 @@
 
     function selectAll(state) {
         Object.keys(sectorMarkers).forEach(sector => toggleSector(sector, state));
-        // Jika expand all, kosongkan pilihan di Select2
         if (state) {
-            $('#sector-search-box').val(null).trigger('change.select2');
+            $('#sector-select-box').val(null).trigger('change.select2');
+            selectedSectorsByClick.clear();
+            $('#search-box').val('');
         }
     }
 
@@ -201,14 +257,16 @@
                 initializeApp();
                 createLayers();
 
-                $('#sector-search-box').select2({
-                    placeholder: 'Cari atau pilih sektor...',
+                $('#sector-select-box').select2({
+                    placeholder: 'Pilih satu/lebih sektor...',
                     allowClear: true
                 });
-                $('#sector-search-box').on('change', performMultiSectorSearch);
+                $('#sector-select-box').on('change', filterBySector);
+                $('#search-box').on('keyup', performSearch);
 
                 selectAll(true);
                 loadDynamicData();
+                buildSearchIndex();
             })
             .catch(error => {
                 console.error('Gagal memuat file konfigurasi:', error);

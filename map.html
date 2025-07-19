@@ -116,19 +116,16 @@
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC-qCWLhkjYc9IYNztAWPmPatlxhCqKzR8"></script>
 
 <div id="controls">
-    <strong>Filter Sektor:</strong>
-    <select id="sector-dropdown" class="form-control" onchange="filterByDropdown()">
-        <option value="all">-- Semua Sektor --</option>
-    </select>
+    <strong>Pencarian & Filter Sektor:</strong> <input type="text" id="search-box" list="sector-list" class="form-control" placeholder="Cari atau pilih sektor...">
 
-    <strong style="margin-top: 10px; display: block;">Pencarian Data:</strong>
-    <input type="text" id="search-box" class="form-control" placeholder="Cari lokasi, callsign, sektor...">
+    <datalist id="sector-list">
+        </datalist>
 
     <div class="text-center" style="margin-top:8px;">
         <button class="btn btn-sm btn-primary" onclick="selectAll(true)">Expand All</button>
         <button class="btn btn-sm btn-danger" onclick="selectAll(false)">Collapse All</button>
     </div>
-  </div>
+</div>
 
 <div id="map"></div>
 
@@ -299,10 +296,23 @@ const dropdownOptions = [];
     }
 
     // Isi dropdown dari daftar sektor yang unik
-    sectors.forEach(sec => {
-        dropdownOptions.push(`<option value="${sec}">${sec}</option>`);
+const sectors = new Set();
+    mapConfig.locations.forEach(loc => {
+        sectors.add(loc.sector);
     });
-    $('#sector-dropdown').append(dropdownOptions.join(''));
+
+    // Ambil elemen datalist
+    const sectorList = document.getElementById('sector-list');
+    
+    // Hapus opsi lama jika ada (untuk pembaruan di masa depan)
+    sectorList.innerHTML = ''; 
+
+    // Isi datalist dengan opsi sektor yang unik
+    sectors.forEach(sec => {
+        const option = document.createElement('option');
+        option.value = sec;
+        sectorList.appendChild(option);
+    });
 }
   
 function buildSearchIndex() {
@@ -408,23 +418,6 @@ function selectAll(state) {
     
     // Setelah di-expand atau di-collapse, reset dropdown ke "Semua Sektor"
     $('#sector-dropdown').val('all');
-}
-
-function filterByDropdown() {
-  $('#search-box').val('');
-  
-    const selected = $('#sector-dropdown').val();
-    
-    if (selected === 'all') {
-        // Jika pilih "Semua Sektor", panggil fungsi expand all
-        selectAll(true);
-    } else {
-        // Jika pilih sektor tertentu:
-        // 1. Sembunyikan dulu semua layer (tanpa sentuh dropdown)
-        hideAllLayers();
-        // 2. Tampilkan layer untuk sektor yang dipilih
-        toggleSector(selected, true);
-    }
 }
 
   function hideAllLayers() {

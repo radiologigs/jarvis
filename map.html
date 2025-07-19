@@ -305,62 +305,72 @@ const dropdownOptions = [];
     $('#sector-dropdown').append(dropdownOptions.join(''));
 }
   
-  function buildSearchIndex() {
-    // 1. Siapkan data gabungan dari lokasi dan log
+function buildSearchIndex() {
+    // 1. Siapkan data gabungan dari lokasi, log, dan deskripsi sektor
     const searchData = mapConfig.locations.map(loc => {
         const logs = radioLogs[loc.varname.toUpperCase()] || [];
+        // Ambil deskripsi/frekuensi untuk sektor ini
+        const frequencyInfo = mapConfig.sectorDescriptions[loc.sector] || '';
+        
         return {
-            ...loc, // Ambil semua data lokasi (name, varname, sector, dll)
-            logs: logs, // Tambahkan data log yang relevan
-            _marker: loc._marker // Simpan referensi ke marker Leaflet-nya
+            ...loc,
+            logs: logs,
+            frequency: frequencyInfo, // <-- TAMBAHAN PENTING
+            _marker: loc._marker
         };
     });
 
     // 2. Konfigurasi Fuse.js
     const options = {
         includeScore: true,
-        threshold: 0.4, // Atur tingkat toleransi (0.0 = cocok persis, 1.0 = super longgar)
+        threshold: 0.3,
         keys: [
-            'name',          // Cari di nama lokasi (e.g., "Cirebon")
-            'varname',       // Cari di varname (e.g., "CRB UJOG")
-            'sector',        // Cari di nama sektor (e.g., "UJOG")
-            'logs.callsign'  // Cari di dalam data log (e.g., "AIC123")
+            'name',
+            'varname',
+            'sector',
+            'logs.callsign',
+            'frequency' // <-- TAMBAHAN PENTING
         ]
     };
 
     // 3. Buat instance Fuse dengan data dan opsi
     fuse = new Fuse(searchData, options);
+    console.log("Search index updated.");
 }
 
 function performSearch() {
     const searchTerm = document.getElementById('search-box').value;
 
+    // Jika search box kosong, kembalikan tampilan ke kondisi filter dropdown
     if (searchTerm.trim() === '') {
-        // Jika kosong, KOSONGKAN cluster stasiun
-        stationClusterGroup.clearLayers();
-        // Lalu tampilkan lagi SEMUA stasiun sesuai filter dropdown yg aktif
-        filterByDropdown(); 
+        filterByDropdown();
         return;
     }
 
     const results = fuse.search(searchTerm);
-    
-    // Selalu kosongkan cluster stasiun sebelum menampilkan hasil baru
-    stationClusterGroup.clearLayers();
 
-    // Ambil marker dari hasil pencarian
-    const resultMarkers = results.map(result => result.item._marker);
-    
-    if (resultMarkers.length > 0) {
-        // Tambahkan HASIL PENCARIAN ke stationClusterGroup
-        stationClusterGroup.addLayers(resultMarkers);
+    // Sembunyikan semua layer terlebih dahulu
+    hideAllLayers();
 
-        if (resultMarkers.length === 1) {
-            map.setView(resultMarkers[0].getLatLng(), 13);
-            resultMarkers[0].openPopup();
+    if (results.length > 0) {
+        // 1. Kumpulkan semua sektor unik dari hasil pencarian
+        const uniqueSectors = [...new Set(results.map(result => result.item.sector))];
+
+        // 2. Tampilkan semua layer (poligon, stasiun, log) untuk setiap sektor yang cocok
+        uniqueSectors.forEach(sector => {
+            toggleSector(sector, true);
+        });
+
+        // 3. (Bonus) Update dropdown untuk sinkronisasi
+        if (uniqueSectors.length === 1) {
+            $('#sector-dropdown').val(uniqueSectors[0]);
+        } else {
+            $('#sector-dropdown').val('all');
         }
+    } else {
+        // Jika tidak ada hasil, pastikan dropdown kembali ke "Semua Sektor"
+        $('#sector-dropdown').val('all');
     }
-    // Jika tidak ada hasil, stationClusterGroup akan tetap kosong, dan itu benar.
 }
 
 /** Menyiapkan semua event listener untuk UI */
@@ -401,6 +411,8 @@ function selectAll(state) {
 }
 
 function filterByDropdown() {
+  $('#search-box').val('');
+  
     const selected = $('#sector-dropdown').val();
     
     if (selected === 'all') {

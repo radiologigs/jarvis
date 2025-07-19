@@ -34,6 +34,28 @@
         .select2-container {
             width: 100% !important;
         }
+    #notification {
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 2000; /* Pastikan di atas segalanya */
+        background-color: rgba(0, 0, 0, 0.75);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 20px;
+        font-size: 14px;
+        
+        /* Untuk efek fade */
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.5s, visibility 0.5s;
+    }
+
+    #notification.show {
+        opacity: 1;
+        visibility: visible;
+    }
     </style>
 </head>
 
@@ -50,7 +72,9 @@
             <button class="btn btn-sm btn-danger" onclick="selectAll(false)">Collapse All</button>
         </div>
     </div>
-
+    
+    <div id="notification"></div>
+    
     <div id="map"></div>
     
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -90,6 +114,34 @@
         const r = parseInt(readability, 10);
         if (r >= 4) return 'green'; if (r >= 2) return 'yellow'; if (r >= 0) return 'red'; return 'grey';
     }
+        function formatDate(date) {
+    // Cek jika input adalah string tanggal ISO (YYYY-MM-DDTHH:mm:ss.sssZ)
+    if (typeof date === 'string' && date.includes('T')) {
+        date = new Date(date);
+    }
+    
+    if (!(date instanceof Date) || isNaN(date)) {
+        // Jika format masih tidak dikenali, kembalikan apa adanya
+        return (typeof date === 'string') ? date.split('T')[0] : date; 
+    }
+    
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // getMonth() dimulai dari 0
+    const year = date.getFullYear();
+    
+    return `${day}/${month}/${year}`;
+}
+        
+function showNotification(message) {
+    const notification = document.getElementById('notification');
+    notification.textContent = message;
+    notification.classList.add('show');
+
+    // Sembunyikan notifikasi setelah 3 detik
+    setTimeout(() => {
+        notification.classList.remove('show');
+    }, 3000);
+}
 
     // --- FUNGSI-FUNGSI UTAMA APLIKASI ---
     function loadDynamicData() {
@@ -191,22 +243,26 @@
     }
 
 function performSearch() {
-    const searchTerm = document.getElementById('search-box').value;
+    const searchBox = document.getElementById('search-box');
+    const searchTerm = searchBox.value;
     const sectorSelect = $('#sector-select-box');
 
     if (searchTerm.trim() === '') {
         sectorSelect.val(null).trigger('change');
-        return;
-    }
-
-    const results = fuse.search(searchTerm);
-
-    if (results.length > 0) {
-        const uniqueSectors = [...new Set(results.map(result => result.item.sector))];
-        sectorSelect.val(uniqueSectors).trigger('change', ['triggered_by_search']);
     } else {
-        alert('Data not found');
+        const results = fuse.search(searchTerm);
+
+        if (results.length > 0) {
+            const uniqueSectors = [...new Set(results.map(result => result.item.sector))];
+            sectorSelect.val(uniqueSectors).trigger('change', ['triggered_by_search']);
+        } else {
+            // Ganti alert() dengan notifikasi custom
+            showNotification('Data tidak ditemukan');
+        }
     }
+
+    // Apapun hasilnya, kosongkan search box setelah Enter
+    searchBox.value = '';
 }
 
     function filterBySector() {

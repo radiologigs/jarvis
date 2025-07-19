@@ -172,6 +172,7 @@ function showNotification(message) {
                 }
             });
             filterBySector();
+                        updateMarkerPopupsWithLogs();
             buildSearchIndex();
         }).catch(error => console.error('Gagal mengambil data:', error));
     }
@@ -304,6 +305,42 @@ function performSearch() {
     function hideAllLayers() {
         Object.keys(sectorMarkers).forEach(sector => toggleSector(sector, false));
     }
+
+        function updateMarkerPopupsWithLogs() {
+    mapConfig.locations.forEach(loc => {
+        if (!loc._marker) return;
+
+        const varnameUpper = loc.varname.toUpperCase();
+        const logs = radioLogs[varnameUpper];
+        let logText = "No logs found for this station.";
+
+        if (logs && logs.length > 0) {
+            logText = logs.slice(-5).map(log => {
+                
+                // MENGGUNAKAN 'log.date' SESUAI KONFIRMASI LO
+                const date = formatDate(log.date) || '-'; 
+                
+                const callsign = log.callsign || '-';
+                const level = log.level || '-';
+                const readability = log.readibility || '-';
+                const radial = log.radial || '-';
+                const distance = log.distance || '-';
+                const checkpoint = log.checkpoint || '-';
+
+                return `Date: ${date} | ${callsign} | FL${level} | Rad: ${radial} | Dist: ${distance}nm | Via: ${checkpoint} | Read: ${readability}`;
+            }).join("<br>");
+        }
+
+        const popupContent = `
+            <b>${loc.name}</b> (${loc.sector})<br>
+            <i>${loc.varname}</i><br>
+            <small>${mapConfig.sectorDescriptions[loc.sector] || ""}</small>
+            <hr style="margin: 5px 0;">
+            <b>Last Logs:</b><br>${logText}
+        `;
+        loc._marker.bindPopup(popupContent);
+    });
+}
 
     // --- JALANKAN APLIKASI ---
 $(document).ready(function() {

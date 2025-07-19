@@ -78,6 +78,9 @@
     let selectedSectorsByClick = new Set();
 
     // --- FUNGSI-FUNGSI HELPER ---
+    const visibleStyle = { opacity: 1, fillOpacity: 0.3 };
+    const invisibleStyle = { opacity: 0, fillOpacity: 0 };
+
     function calculateDestinationPoint(lat, lon, bearing, distanceNm) {
         const R = 6371; const distanceKm = distanceNm * 1.852;
         const latRad = (lat * Math.PI) / 180; const lonRad = (lon * Math.PI) / 180; const bearingRad = (bearing * Math.PI) / 180;
@@ -157,12 +160,14 @@
 
         for (const sector in mapConfig.sectorPolygons) {
             const polygon = L.polygon(mapConfig.sectorPolygons[sector], {
-                color: mapConfig.sectorColors[sector] || 'gray', weight: 2, fillOpacity: 0.3
+                color: mapConfig.sectorColors[sector] || 'gray', weight: 2,
+                opacity: 0, fillOpacity: 0 // Mulai dengan transparan
             }).bindPopup(`<b>${sector}</b><br>${mapConfig.sectorDescriptions[sector] || "No description"}`)
               .bindTooltip(sector, { sticky: true, direction: 'center', className: 'polygon-label' });
             
             polygon.sectorName = sector;
             polygon.on('click', onPolygonClick);
+            polygon.addTo(map); // Langsung tambahkan ke peta
             polygonLayers[sector] = polygon;
         }
 
@@ -226,7 +231,7 @@
             });
         }
         if (polygonLayers[sector]) {
-            show ? map.addLayer(polygonLayers[sector]) : map.removeLayer(polygonLayers[sector]);
+            polygonLayers[sector].setStyle(show ? visibleStyle : invisibleStyle);
         }
         if (logMarkersBySector[sector]) {
             logMarkersBySector[sector].forEach(marker => {

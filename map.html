@@ -164,7 +164,16 @@ function showNotification(message) {
                     const destination = calculateDestinationPoint(station.latitude, station.longitude, logItem.radial, logItem.distance);
                     const markerColor = getReadabilityColor(logItem.readibility);
                     const logMarker = L.circleMarker(destination, { radius: 6, color: markerColor, fillColor: markerColor, fillOpacity: 0.9 });
-                    const popupContent = `<b>Log dari: ${station.name}</b><hr style="margin: 5px 0;"><b>Callsign:</b> ${logItem.callsign || '-'}<br><b>Level:</b> FL${logItem.level || '-'}<br><b>Readability:</b> ${logItem.readibility || '-'}<br><b>Radial:</b> ${logItem.radial}°<br><b>Distance:</b> ${logItem.distance}nm`;
+                    const date = formatDate(logItem.date) || '-';
+                    const popupContent = `
+                        <b>Log dari: ${station.name}</b><hr style="margin: 5px 0;">
+                        <b>Tanggal:</b> ${date}<br> 
+                        <b>Callsign:</b> ${logItem.callsign || '-'}<br>
+                        <b>Level:</b> FL${logItem.level || '-'}<br>
+                        <b>Readability:</b> ${logItem.readibility || '-'}<br>
+                        <b>Radial:</b> ${logItem.radial}°<br>
+                        <b>Distance:</b> ${logItem.distance}nm
+                    `;
                     logMarker.bindPopup(popupContent);
                     const sector = station.sector;
                     if (!logMarkersBySector[sector]) { logMarkersBySector[sector] = []; }
@@ -317,7 +326,6 @@ function performSearch() {
         if (logs && logs.length > 0) {
             logText = logs.slice(-5).map(log => {
                 
-                // MENGGUNAKAN 'log.date' SESUAI KONFIRMASI LO
                 const date = formatDate(log.date) || '-'; 
                 
                 const callsign = log.callsign || '-';

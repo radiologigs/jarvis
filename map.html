@@ -4,12 +4,16 @@
     <meta charset="utf-8" />
     <title>JATSC Radio Visualization (JARVIS)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/MarkerCluster.css"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/MarkerCluster.Default.css"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
+    
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
     <style>
         html, body, #map { height: 100%; margin: 0; padding: 0; }
         .polygon-label {
@@ -18,28 +22,30 @@
             box-shadow: 0 0 2px rgba(0,0,0,0.3);
         }
         #controls {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            z-index: 1000;
-            background: white;
-            padding: 8px;
-            border-radius: 6px;
+            position: absolute; top: 10px; right: 10px; z-index: 1000;
+            background: white; padding: 8px; border-radius: 6px;
             box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-            width: 45vw;
-            max-width: 220px;
-            min-width: 160px;
+            width: 45vw; max-width: 220px; min-width: 160px;
         }
-        #controls strong, #controls label { font-size: 13px; margin-bottom: 4px; }
+        #controls strong { font-size: 13px; margin-bottom: 4px; }
         #controls .btn { padding: 3px 8px; font-size: 12px; }
+
+        /* Style tambahan untuk Select2 */
+        .select2-container--default .select2-selection--multiple {
+            border: 1px solid #ccc; border-radius: 4px;
+        }
+        .select2-container {
+            width: 100% !important;
+        }
     </style>
 </head>
 
 <body>
     <div id="controls">
         <strong>Pencarian & Filter Sektor:</strong> 
-        <input type="text" id="search-box" list="sector-list" class="form-control" placeholder="Cari atau pilih sektor...">
-        <datalist id="sector-list"></datalist>
+        <select id="sector-search-box" class="form-control" multiple="multiple">
+        </select>
+
         <div class="text-center" style="margin-top:8px;">
             <button class="btn btn-sm btn-primary" onclick="selectAll(true)">Expand All</button>
             <button class="btn btn-sm btn-danger" onclick="selectAll(false)">Collapse All</button>
@@ -51,7 +57,9 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@latest/dist/Leaflet.GoogleMutant.js"></script>
@@ -59,10 +67,7 @@
 
     <script>
     // --- INISIALISASI PETA & VARIABEL GLOBAL ---
-    const map = L.map("map", {
-        zoomControl: false 
-    }).setView([-2.5, 117.0], 5);
-
+    const map = L.map("map", { zoomControl: false }).setView([-2.5, 117.0], 5);
     L.control.zoom({ position: 'bottomleft' }).addTo(map);
     const stationClusterGroup = L.markerClusterGroup();
     const logClusterGroup = L.markerClusterGroup();
@@ -71,95 +76,58 @@
     let logMarkersBySector = {};
     let radioLogs = {};
     let mapConfig;
-    let fuse;
 
     // --- FUNGSI-FUNGSI HELPER ---
     function calculateDestinationPoint(lat, lon, bearing, distanceNm) {
-        const R = 6371;
-        const distanceKm = distanceNm * 1.852;
-        const latRad = (lat * Math.PI) / 180;
-        const lonRad = (lon * Math.PI) / 180;
-        const bearingRad = (bearing * Math.PI) / 180;
+        const R = 6371; const distanceKm = distanceNm * 1.852;
+        const latRad = (lat * Math.PI) / 180; const lonRad = (lon * Math.PI) / 180; const bearingRad = (bearing * Math.PI) / 180;
         const lat2Rad = Math.asin(Math.sin(latRad) * Math.cos(distanceKm / R) + Math.cos(latRad) * Math.sin(distanceKm / R) * Math.cos(bearingRad));
         const lon2Rad = lonRad + Math.atan2(Math.sin(bearingRad) * Math.sin(distanceKm / R) * Math.cos(latRad), Math.cos(distanceKm / R) - Math.sin(latRad) * Math.sin(lat2Rad));
-        const lat2 = (lat2Rad * 180) / Math.PI;
-        const lon2 = (lon2Rad * 180) / Math.PI;
-        return [lat2, lon2];
+        return [(lat2Rad * 180) / Math.PI, (lon2Rad * 180) / Math.PI];
     }
-
     function getReadabilityColor(readability) {
         const r = parseInt(readability, 10);
-        if (r >= 4) return 'green';
-        if (r >= 2) return 'yellow';
-        if (r >= 0) return 'red';
-        return 'grey';
+        if (r >= 4) return 'green'; if (r >= 2) return 'yellow'; if (r >= 0) return 'red'; return 'grey';
     }
 
     // --- FUNGSI-FUNGSI UTAMA APLIKASI ---
     function loadDynamicData() {
         const apiUrl = 'https://script.google.com/macros/s/AKfycbysOsW_I0X2UxA6Gl0KwfFtFwG39imuqM4qfPPDl_alNh1TBWBIPB9kbbYvbKU3OZE/exec';
-
-        fetch(apiUrl)
-            .then(response => response.json())
-            .then(data => {
-                console.log("Data log dari Google Sheet:", data);
-                const stationLocations = {};
-                mapConfig.locations.forEach(loc => {
-                    stationLocations[loc.varname.toUpperCase()] = loc;
-                });
-
-                logClusterGroup.clearLayers();
-                logMarkersBySector = {};
-                radioLogs = {};
-
-                data.forEach(logItem => {
-                    const stationVarname = (logItem.radio_id || "").trim().toUpperCase();
-                    const station = stationLocations[stationVarname];
-
-                    if (stationVarname) {
-                        if (!radioLogs[stationVarname]) {
-                            radioLogs[stationVarname] = [];
-                        }
-                        radioLogs[stationVarname].push(logItem);
-                    }
-
-                    if (station && logItem.radial != null && logItem.distance != null) {
-                        const destination = calculateDestinationPoint(station.latitude, station.longitude, logItem.radial, logItem.distance);
-                        const markerColor = getReadabilityColor(logItem.readibility);
-                        const logMarker = L.circleMarker(destination, { radius: 6, color: markerColor, fillColor: markerColor, fillOpacity: 0.9 });
-                        const popupContent = `<b>Log dari: ${station.name}</b><hr style="margin: 5px 0;"><b>Callsign:</b> ${logItem.callsign || '-'}<br><b>Level:</b> FL${logItem.level || '-'}<br><b>Readability:</b> ${logItem.readibility || '-'}<br><b>Radial:</b> ${logItem.radial}°<br><b>Distance:</b> ${logItem.distance}nm`;
-                        logMarker.bindPopup(popupContent);
-
-                        const sector = station.sector;
-                        if (!logMarkersBySector[sector]) {
-                            logMarkersBySector[sector] = [];
-                        }
-                        logMarkersBySector[sector].push(logMarker);
-                    }
-                });
-                selectAll(true);
-                updateMarkerPopupsWithLogs();
-                buildSearchIndex();
-            })
-            .catch(error => console.error('Gagal mengambil data:', error));
+        fetch(apiUrl).then(response => response.json()).then(data => {
+            console.log("Data log dari Google Sheet:", data);
+            const stationLocations = {};
+            mapConfig.locations.forEach(loc => { stationLocations[loc.varname.toUpperCase()] = loc; });
+            logClusterGroup.clearLayers();
+            logMarkersBySector = {};
+            data.forEach(logItem => {
+                const stationVarname = (logItem.radio_id || "").trim().toUpperCase();
+                const station = stationLocations[stationVarname];
+                if (station && logItem.radial != null && logItem.distance != null) {
+                    const destination = calculateDestinationPoint(station.latitude, station.longitude, logItem.radial, logItem.distance);
+                    const markerColor = getReadabilityColor(logItem.readibility);
+                    const logMarker = L.circleMarker(destination, { radius: 6, color: markerColor, fillColor: markerColor, fillOpacity: 0.9 });
+                    const popupContent = `<b>Log dari: ${station.name}</b><hr style="margin: 5px 0;"><b>Callsign:</b> ${logItem.callsign || '-'}<br><b>Level:</b> FL${logItem.level || '-'}<br><b>Readability:</b> ${logItem.readibility || '-'}<br><b>Radial:</b> ${logItem.radial}°<br><b>Distance:</b> ${logItem.distance}nm`;
+                    logMarker.bindPopup(popupContent);
+                    const sector = station.sector;
+                    if (!logMarkersBySector[sector]) { logMarkersBySector[sector] = []; }
+                    logMarkersBySector[sector].push(logMarker);
+                }
+            });
+            performMultiSectorSearch(); // Tampilkan log sesuai filter yg mungkin sudah aktif
+        }).catch(error => console.error('Gagal mengambil data:', error));
     }
 
     function initializeApp() {
-        L.gridLayer.googleMutant({
-            type: 'roadmap'
-        }).addTo(map);
+        L.gridLayer.googleMutant({ type: 'roadmap' }).addTo(map);
         map.addLayer(stationClusterGroup);
         map.addLayer(logClusterGroup);
-        setupUIListeners();
     }
 
     function createLayers() {
         const sectors = new Set();
         mapConfig.locations.forEach(loc => {
             sectors.add(loc.sector);
-            if (!sectorMarkers[loc.sector]) {
-                sectorMarkers[loc.sector] = [];
-            }
+            if (!sectorMarkers[loc.sector]) { sectorMarkers[loc.sector] = []; }
             const icon = L.AwesomeMarkers.icon({ icon: 'map-marker', prefix: 'fa', markerColor: 'blue' });
             const marker = L.marker([loc.latitude, loc.longitude], { icon: icon });
             marker.bindTooltip(loc.name, { sticky: true });
@@ -169,54 +137,31 @@
 
         for (const sector in mapConfig.sectorPolygons) {
             const polygon = L.polygon(mapConfig.sectorPolygons[sector], {
-                color: mapConfig.sectorColors[sector] || 'gray',
-                weight: 2,
-                fillOpacity: 0.3
+                color: mapConfig.sectorColors[sector] || 'gray', weight: 2, fillOpacity: 0.3
             }).bindPopup(`<b>${sector}</b><br>${mapConfig.sectorDescriptions[sector] || "No description"}`)
               .bindTooltip(sector, { sticky: true, direction: 'center', className: 'polygon-label' });
             polygonLayers[sector] = polygon;
         }
 
-        const sectorList = document.getElementById('sector-list');
-        sectorList.innerHTML = '';
+        const searchBox = $('#sector-search-box');
+        searchBox.empty();
         sectors.forEach(sec => {
-            const option = document.createElement('option');
-            option.value = sec;
-            sectorList.appendChild(option);
+            const option = new Option(sec, sec, false, false);
+            searchBox.append(option);
         });
+        searchBox.trigger('change');
     }
 
-    function buildSearchIndex() {
-        const searchData = mapConfig.locations.map(loc => {
-            const logs = radioLogs[loc.varname.toUpperCase()] || [];
-            const frequencyInfo = mapConfig.sectorDescriptions[loc.sector] || '';
-            return { ...loc, logs, frequency: frequencyInfo, _marker: loc._marker };
-        });
-        const options = {
-            includeScore: true,
-            threshold: 0.3,
-            keys: ['name', 'varname', 'sector', 'logs.callsign', 'frequency']
-        };
-        fuse = new Fuse(searchData, options);
-        console.log("Search index updated.");
-    }
-
-    function performSearch() {
-        const searchTerm = document.getElementById('search-box').value;
-        if (searchTerm.trim() === '') {
+    function performMultiSectorSearch() {
+        const selectedSectors = $('#sector-search-box').val();
+        if (!selectedSectors || selectedSectors.length === 0) {
             selectAll(true);
             return;
         }
-        const results = fuse.search(searchTerm);
         hideAllLayers();
-        if (results.length > 0) {
-            const uniqueSectors = [...new Set(results.map(result => result.item.sector))];
-            uniqueSectors.forEach(sector => toggleSector(sector, true));
-        }
-    }
-
-    function setupUIListeners() {
-        $('#search-box').on('keyup', performSearch);
+        selectedSectors.forEach(sector => {
+            toggleSector(sector, true);
+        });
     }
 
     function toggleSector(sector, show) {
@@ -237,26 +182,14 @@
 
     function selectAll(state) {
         Object.keys(sectorMarkers).forEach(sector => toggleSector(sector, state));
+        // Jika expand all, kosongkan pilihan di Select2
+        if (state) {
+            $('#sector-search-box').val(null).trigger('change.select2');
+        }
     }
 
     function hideAllLayers() {
         Object.keys(sectorMarkers).forEach(sector => toggleSector(sector, false));
-    }
-
-    function updateMarkerPopupsWithLogs() {
-        mapConfig.locations.forEach(loc => {
-            if (!loc._marker) return;
-            const varnameUpper = loc.varname.toUpperCase();
-            const logs = radioLogs[varnameUpper];
-            let logText = "No logs found for this station.";
-            if (logs && logs.length > 0) {
-                logText = logs.slice(-5).map(log => {
-                    return `Date: ${log.date || '-'} | ${log.callsign || '-'} | FL${log.level || '-'} | Read: ${log.readibility || '-'}`;
-                }).join("<br>");
-            }
-            const popupContent = `<b>${loc.name}</b> (${loc.sector})<br><i>${loc.varname}</i><br><small>${mapConfig.sectorDescriptions[loc.sector] || ""}</small><hr style="margin: 5px 0;"><b>Last Logs:</b><br>${logText}`;
-            loc._marker.bindPopup(popupContent);
-        });
     }
 
     // --- JALANKAN APLIKASI ---
@@ -267,9 +200,15 @@
                 mapConfig = configData;
                 initializeApp();
                 createLayers();
+
+                $('#sector-search-box').select2({
+                    placeholder: 'Cari atau pilih sektor...',
+                    allowClear: true
+                });
+                $('#sector-search-box').on('change', performMultiSectorSearch);
+
                 selectAll(true);
                 loadDynamicData();
-                buildSearchIndex();
             })
             .catch(error => {
                 console.error('Gagal memuat file konfigurasi:', error);

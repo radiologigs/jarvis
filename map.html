@@ -56,12 +56,53 @@
         opacity: 1;
         visibility: visible;
     }
+            #controls {
+        transition: transform 0.4s ease-in-out;
+    }
+
+    /* Style untuk tombol toggle */
+    #toggle-controls-btn {
+        position: absolute;
+        top: 5px;
+        left: -25px; /* Posisikan sedikit di luar box */
+        width: 25px;
+        height: 25px;
+        background-color: white;
+        border: 1px solid #ccc;
+        border-right: none;
+        border-radius: 5px 0 0 5px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: -2px 1px 5px rgba(0,0,0,0.2);
+    }
+    
+    #toggle-controls-btn i {
+        transition: transform 0.4s;
+    }
+
+    /* Style untuk panel saat disembunyikan */
+    #controls.is-hidden {
+        /* Geser panel ke kanan sejauh lebarnya + 15px agar hilang */
+        transform: translateX(calc(100% + 15px));
+    }
+
+    /* Putar ikon panah saat panel disembunyikan */
+    #controls.is-hidden #toggle-controls-btn i {
+        transform: rotate(180deg);
+    }
     </style>
 </head>
 
 <body>
     <div id="controls">
+        <div id="toggle-controls-btn">
+            <i class="fa fa-chevron-right"></i>
+        </div>
+        
         <strong>Filter Sektor:</strong>
+        </div>
         <select id="sector-select-box" class="form-control" multiple="multiple"></select>
 
         <strong style="margin-top: 10px;">Pencarian Data:</strong>
@@ -376,7 +417,11 @@ $(document).ready(function() {
                     performSearch();
                 }
             });
-
+            
+            $('#toggle-controls-btn').on('click', function() {
+                $('#controls').toggleClass('is-hidden');
+            });
+            
             selectAll(true);
             loadDynamicData();
             buildSearchIndex();

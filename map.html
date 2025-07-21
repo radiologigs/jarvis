@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css" />
 
     <style>
         html, body, #map { height: 100%; margin: 0; padding: 0; }
@@ -123,6 +124,7 @@
     <script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.js"></script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC-qCWLhkjYc9IYNztAWPmPatlxhCqKzR8&callback=initMap" async defer></script>
     <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@latest/dist/Leaflet.GoogleMutant.js"></script>
 
@@ -230,6 +232,15 @@ function showNotification(message) {
         map.addLayer(stationClusterGroup);
         map.addLayer(logClusterGroup);
     }
+    const measureControl = L.control.measure({
+        position: 'topleft',
+        primaryLengthUnit: 'nauticalmiles',
+        secondaryLengthUnit: 'kilometers',
+        primaryAreaUnit: 'sqmeters',
+        activeColor: '#0078A8',
+        completedColor: '#00A884'
+    });
+    measureControl.addTo(map);
 
     function onPolygonClick(e) {
         const clickedSector = e.target.sectorName;

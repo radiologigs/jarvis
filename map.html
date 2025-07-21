@@ -125,8 +125,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@latest/dist/Leaflet.GoogleMutant.js"></script>
-    <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC-qCWLhkjYc9IYNztAWPmPatlxhCqKzR8"></script>
-
+    <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC-qCWLhkjYc9IYNztAWPmPatlxhCqKzR8&callback=initMap"></script>
+    
     <script>
     // --- INISIALISASI PETA & VARIABEL GLOBAL ---
     const map = L.map("map", { zoomControl: false }).setView([-2.5, 117.0], 5);
@@ -388,11 +388,14 @@ function updateMarkerPopupsWithLogs() {
     });
 }
     // --- JALANKAN APLIKASI ---
-$(document).ready(function() {
+// --- JALANKAN APLIKASI ---
+// Google akan memanggil fungsi ini secara otomatis setelah script-nya siap
+function initMap() {
     fetch('config.json')
         .then(response => response.json())
         .then(configData => {
             mapConfig = configData;
+            
             initializeApp();
             createLayers();
 
@@ -413,7 +416,7 @@ $(document).ready(function() {
                     performSearch();
                 }
             });
-            
+
             $('#toggle-controls-btn').on('click', function() {
                 $('#controls').toggleClass('is-hidden');
             });
@@ -426,7 +429,7 @@ $(document).ready(function() {
             console.error('Gagal memuat file konfigurasi:', error);
             document.getElementById('map').innerHTML = '<h2>Error: Gagal memuat data peta.</h2>';
         });
-});
-    </script>
+}
+</script>
 </body>
 </html>

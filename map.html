@@ -83,15 +83,15 @@
         transition: transform 0.4s;
     }
 
-    /* Style untuk panel saat disembunyikan */
     #controls.is-hidden {
-        /* Geser panel ke kanan sejauh lebarnya + 15px agar hilang */
         transform: translateX(calc(100% + 15px));
     }
 
-    /* Putar ikon panah saat panel disembunyikan */
     #controls.is-hidden #toggle-controls-btn i {
         transform: rotate(180deg);
+    }
+            .leaflet-measure-window {
+        display: none !important;
     }
     </style>
 </head>
@@ -404,21 +404,6 @@ function updateMarkerPopupsWithLogs() {
                 });
                 measureControl.addTo(map);
 
-                // 2. "Bajak" tombol utama ruler
-                // Tombol ini punya class '.leaflet-control-measure-toggle'
-                $('.leaflet-control-measure-toggle').on('click', function(e) {
-                    e.preventDefault(); // Mencegah aksi default (membuka panel)
-                    
-                    // Jika kita sedang tidak mengukur, maka mulai pengukuran.
-                    // Jika sedang mengukur, biarkan aksi default (cancel) berjalan.
-                    if (!measureControl._measuring) {
-                        // Cari tombol 'Ukur Jarak' di dalam panel (yang tersembunyi)
-                        // dan klik secara otomatis untuk langsung memulai mode gambar.
-                        $('a[title="Measure distance"]').click();
-                    }
-                });
-
-                // 3. Logika custom untuk alur 2-klik
                 let clickCount = 0;
                 let firstPoint = null;
 

@@ -355,7 +355,7 @@ function performSearch() {
         Object.keys(sectorMarkers).forEach(sector => toggleSector(sector, false));
     }
 
-        function updateMarkerPopupsWithLogs() {
+function updateMarkerPopupsWithLogs() {
     mapConfig.locations.forEach(loc => {
         if (!loc._marker) return;
 
@@ -365,9 +365,7 @@ function performSearch() {
 
         if (logs && logs.length > 0) {
             logText = logs.slice(-5).map(log => {
-                
                 const date = formatDate(log.date) || '-'; 
-                
                 const callsign = log.callsign || '-';
                 const level = log.level || '-';
                 const readability = log.readibility || '-';
@@ -375,7 +373,7 @@ function performSearch() {
                 const distance = log.distance || '-';
                 const checkpoint = log.checkpoint || '-';
 
-                return `Date: ${date} | ${callsign} | FL${level} | Rad: ${radial} | Dist: ${distance}nm | Via: ${checkpoint} | Read: ${readability}`;
+                return `Date: ${date} | ${callsign} | FL${level} | Via: ${checkpoint} | Rad: ${radial} | Dist: ${distance}nm | Read: ${readability}`;
             }).join("<br>");
         }
 
@@ -386,23 +384,6 @@ function performSearch() {
             <hr style="margin: 5px 0;">
             <b>Last Logs:</b><br>${logText}
         `;
-        loc._marker.bindPopup(popupContent);
-    });
-}
-
-function updateMarkerPopupsWithLogs() {
-    mapConfig.locations.forEach(loc => {
-        if (!loc._marker) return;
-        const varnameUpper = loc.varname.toUpperCase();
-        const logs = radioLogs[varnameUpper];
-        let logText = "No logs found for this station.";
-        if (logs && logs.length > 0) {
-            logText = logs.slice(-5).map(log => {
-                const date = formatDate(log.date) || '-';
-                return `Date: ${date} | ${log.callsign || '-'} | FL${log.level || '-'} | Read: ${log.readibility || '-'}`;
-            }).join("<br>");
-        }
-        const popupContent = `<b>${loc.name}</b> (${loc.sector})<br><i>${loc.varname}</i><br><small>${mapConfig.sectorDescriptions[loc.sector] || ""}</small><hr style="margin: 5px 0;"><b>Last Logs:</b><br>${logText}`;
         loc._marker.bindPopup(popupContent);
     });
 }

@@ -15,41 +15,52 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css" />
 
     <style>
-        html, body, #map { height: 100%; margin: 0; padding: 0; }
-        .polygon-label {
-            font-weight: bold; color: #000; background-color: rgba(255,255,255,0.85);
-            padding: 2px 5px; border-radius: 4px; font-size: 12px;
-            box-shadow: 0 0 2px rgba(0,0,0,0.3);
-        }
-        #controls {
-            position: absolute; top: 10px; right: 10px; z-index: 1000;
-            background: white; padding: 8px; border-radius: 6px;
-            box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-            width: 45vw; max-width: 220px; min-width: 180px;
-        }
-        #controls strong { font-size: 13px; margin-bottom: 4px; display: block; }
-        #controls .btn { padding: 3px 8px; font-size: 12px; }
-        .select2-container--default .select2-selection--multiple { border: 1px solid #ccc; border-radius: 4px; }
-        .select2-container { width: 100% !important; }
-        #notification {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            z-index: 2000; background-color: rgba(0, 0, 0, 0.75); color: white;
-            padding: 10px 20px; border-radius: 20px; font-size: 14px;
-            opacity: 0; visibility: hidden; transition: opacity 0.5s, visibility 0.5s;
-        }
-        #notification.show { opacity: 1; visibility: visible; }
-        #toggle-controls-btn {
-            position: absolute; top: 5px; left: -25px; width: 25px; height: 25px;
-            background-color: white; border: 1px solid #ccc; border-right: none;
-            border-radius: 5px 0 0 5px; cursor: pointer; display: flex;
-            align-items: center; justify-content: center;
-            box-shadow: -2px 1px 5px rgba(0,0,0,0.2);
-        }
+    html, body, #map { height: 100%; margin: 0; padding: 0; }
     
-        #toggle-controls-btn i { transition: transform 0.4s; }
-        #controls.is-hidden { transform: translateX(calc(100% + 15px)); }
-        #controls.is-hidden #toggle-controls-btn i { transform: rotate(180deg); }
-        .leaflet-measure-window, .leaflet-measure-resultspopup { display: none !important; }
+    .polygon-label {
+        font-weight: bold; color: #000; background-color: rgba(255,255,255,0.85);
+        padding: 2px 5px; border-radius: 4px; font-size: 12px;
+        box-shadow: 0 0 2px rgba(0,0,0,0.3);
+    }
+
+    #controls {
+        position: absolute; top: 10px; right: 10px; z-index: 1000;
+        background: white; padding: 8px; border-radius: 6px;
+        box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+        width: 45vw; max-width: 220px; min-width: 180px;
+        transition: transform 0.4s ease-in-out; /* Transisi untuk minimize/maximize */
+    }
+
+    #controls strong { font-size: 13px; margin-bottom: 4px; display: block; }
+    #controls .btn { padding: 3px 8px; font-size: 12px; }
+
+    .select2-container--default .select2-selection--multiple { border: 1px solid #ccc; border-radius: 4px; }
+    .select2-container { width: 100% !important; }
+
+    #notification {
+        position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+        z-index: 2000; background-color: rgba(0, 0, 0, 0.75); color: white;
+        padding: 10px 20px; border-radius: 20px; font-size: 14px;
+        opacity: 0; visibility: hidden; transition: opacity 0.5s, visibility 0.5s;
+    }
+    #notification.show { opacity: 1; visibility: visible; }
+    
+    #toggle-controls-btn {
+        position: absolute; top: 5px; left: -25px; width: 25px; height: 25px;
+        background-color: white; border: 1px solid #ccc; border-right: none;
+        border-radius: 5px 0 0 5px; cursor: pointer; display: flex;
+        align-items: center; justify-content: center;
+        box-shadow: -2px 1px 5px rgba(0,0,0,0.2);
+    }
+    #toggle-controls-btn i { transition: transform 0.4s; }
+
+    #controls.is-hidden { transform: translateX(calc(100% + 15px)); }
+    #controls.is-hidden #toggle-controls-btn i { transform: rotate(180deg); }
+
+    .leaflet-measure-window,
+    .leaflet-measure-resultspopup {
+        display: none !important;
+    }
     </style>
 </head>
 <body>

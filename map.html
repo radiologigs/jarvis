@@ -15,6 +15,8 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css" />
+
 
     <style>
         html, body, #map { height: 100%; margin: 0; padding: 0; }
@@ -119,6 +121,9 @@
     <div id="notification"></div>
     
     <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.js"></script>
+    <script>
     
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
@@ -393,8 +398,6 @@ function updateMarkerPopupsWithLogs() {
     });
 }
     // --- JALANKAN APLIKASI ---
-// --- JALANKAN APLIKASI ---
-// Google akan memanggil fungsi ini secara otomatis setelah script-nya siap
 function initMap() {
     fetch('config.json')
         .then(response => response.json())
@@ -403,6 +406,16 @@ function initMap() {
             
             initializeApp();
             createLayers();
+
+            const measureControl = L.control.measure({
+                position: 'topleft', // Posisi tombol
+                primaryLengthUnit: 'nauticalmiles', // <-- SATUAN UTAMA: Nautical Miles
+                secondaryLengthUnit: 'kilometers', // Satuan sekunder (opsional)
+                primaryAreaUnit: 'sqmeters', // Tidak kita pakai, tapi wajib ada
+                activeColor: '#0078A8', // Warna garis saat mengukur
+                completedColor: '#00A884' // Warna garis setelah selesai
+            });
+            measureControl.addTo(map);
 
             $('#sector-select-box').select2({
                 placeholder: 'Pilih satu/lebih sektor...',

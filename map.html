@@ -3,20 +3,15 @@
 <head>
     <meta charset="utf-8" />
     <title>JATSC Radio Visual Information System (JARVIS)</title>
-
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/MarkerCluster.css"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/MarkerCluster.Default.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css" />
-
 
     <style>
         html, body, #map { height: 100%; margin: 0; padding: 0; }
@@ -119,22 +114,16 @@
     </div>
     
     <div id="notification"></div>
-    
     <div id="map"></div>
-
-    <script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.js"></script>
-    <script>
     
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
-    
-    <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC-qCWLhkjYc9IYNztAWPmPatlxhCqKzR8&callback=initMap" async defer></script>
-    
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC-qCWLhkjYc9IYNztAWPmPatlxhCqKzR8&callback=initMap" async defer></script>
     <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@latest/dist/Leaflet.GoogleMutant.js"></script>
 
     <script>
@@ -398,56 +387,47 @@ function updateMarkerPopupsWithLogs() {
     });
 }
     // --- JALANKAN APLIKASI ---
-function initMap() {
-    fetch('config.json')
-        .then(response => response.json())
-        .then(configData => {
-            mapConfig = configData;
-            
-            initializeApp();
-            createLayers();
+    function initMap() {
+        $(document).ready(function() {
+            fetch('config.json')
+                .then(response => response.json())
+                .then(configData => {
+                    mapConfig = configData;
+                    initializeApp();
+                    createLayers();
+                    
+                    $('#sector-select-box').select2({
+                        placeholder: 'Pilih satu/lebih sektor...',
+                        allowClear: true
+                    });
+                    
+                    $('#sector-select-box').on('change', function (e, triggerSource) {
+                        if (triggerSource !== 'triggered_by_search') {
+                            $('#search-box').val('');
+                        }
+                        filterBySector();
+                    });
+                    
+                    $('#search-box').on('keydown', function (event) {
+                        if (event.key === 'Enter' || event.keyCode === 13) {
+                            performSearch();
+                        }
+                    });
 
-            const measureControl = L.control.measure({
-                position: 'topleft', // Posisi tombol
-                primaryLengthUnit: 'nauticalmiles', // <-- SATUAN UTAMA: Nautical Miles
-                secondaryLengthUnit: 'kilometers', // Satuan sekunder (opsional)
-                primaryAreaUnit: 'sqmeters', // Tidak kita pakai, tapi wajib ada
-                activeColor: '#0078A8', // Warna garis saat mengukur
-                completedColor: '#00A884' // Warna garis setelah selesai
-            });
-            measureControl.addTo(map);
-
-            $('#sector-select-box').select2({
-                placeholder: 'Pilih satu/lebih sektor...',
-                allowClear: true
-            });
-            
-            $('#sector-select-box').on('change', function (e, triggerSource) {
-                if (triggerSource !== 'triggered_by_search') {
-                    $('#search-box').val('');
-                }
-                filterBySector();
-            });
-            
-            $('#search-box').on('keydown', function (event) {
-                if (event.key === 'Enter' || event.keyCode === 13) {
-                    performSearch();
-                }
-            });
-
-            $('#toggle-controls-btn').on('click', function() {
-                $('#controls').toggleClass('is-hidden');
-            });
-            
-            selectAll(true);
-            loadDynamicData();
-            buildSearchIndex();
-        })
-        .catch(error => {
-            console.error('Gagal memuat file konfigurasi:', error);
-            document.getElementById('map').innerHTML = '<h2>Error: Gagal memuat data peta.</h2>';
+                    $('#toggle-controls-btn').on('click', function() {
+                        $('#controls').toggleClass('is-hidden');
+                    });
+                    
+                    selectAll(true);
+                    loadDynamicData();
+                    buildSearchIndex();
+                })
+                .catch(error => {
+                    console.error('Gagal memuat file konfigurasi:', error);
+                    document.getElementById('map').innerHTML = '<h2>Error: Gagal memuat data peta.</h2>';
+                });
         });
-}
+    }
 </script>
 </body>
 </html>

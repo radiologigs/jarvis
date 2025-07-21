@@ -3,75 +3,113 @@
 <head>
     <meta charset="utf-8" />
     <title>JATSC Radio Visual Information System (JARVIS)</title>
+
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css"/>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/MarkerCluster.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/MarkerCluster.Default.css"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css" />
 
     <style>
-    html, body, #map { height: 100%; margin: 0; padding: 0; }
-    
-    .polygon-label {
-        font-weight: bold; color: #000; background-color: rgba(255,255,255,0.85);
-        padding: 2px 5px; border-radius: 4px; font-size: 12px;
-        box-shadow: 0 0 2px rgba(0,0,0,0.3);
-    }
-
-    #controls {
-        position: absolute; top: 10px; right: 10px; z-index: 1000;
-        background: white; padding: 8px; border-radius: 6px;
-        box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-        width: 45vw; max-width: 220px; min-width: 180px;
-        transition: transform 0.4s ease-in-out; /* Transisi untuk minimize/maximize */
-    }
-
-    #controls strong { font-size: 13px; margin-bottom: 4px; display: block; }
-    #controls .btn { padding: 3px 8px; font-size: 12px; }
-
-    .select2-container--default .select2-selection--multiple { border: 1px solid #ccc; border-radius: 4px; }
-    .select2-container { width: 100% !important; }
-
+        html, body, #map { height: 100%; margin: 0; padding: 0; }
+        .polygon-label {
+            font-weight: bold; color: #000; background-color: rgba(255,255,255,0.85);
+            padding: 2px 5px; border-radius: 4px; font-size: 12px;
+            box-shadow: 0 0 2px rgba(0,0,0,0.3);
+        }
+        #controls {
+            position: absolute; top: 10px; right: 10px; z-index: 1000;
+            background: white; padding: 8px; border-radius: 6px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+            width: 45vw; max-width: 220px; min-width: 180px;
+        }
+        #controls strong { font-size: 13px; margin-bottom: 4px; display: block; }
+        #controls .btn { padding: 3px 8px; font-size: 12px; }
+        .select2-container--default .select2-selection--multiple {
+            border: 1px solid #ccc; border-radius: 4px;
+        }
+        .select2-container {
+            width: 100% !important;
+        }
     #notification {
-        position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-        z-index: 2000; background-color: rgba(0, 0, 0, 0.75); color: white;
-        padding: 10px 20px; border-radius: 20px; font-size: 14px;
-        opacity: 0; visibility: hidden; transition: opacity 0.5s, visibility 0.5s;
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 2000; /* Pastikan di atas segalanya */
+        background-color: rgba(0, 0, 0, 0.75);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 20px;
+        font-size: 14px;
+        
+        /* Untuk efek fade */
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.5s, visibility 0.5s;
     }
-    #notification.show { opacity: 1; visibility: visible; }
-    
+
+    #notification.show {
+        opacity: 1;
+        visibility: visible;
+    }
+            #controls {
+        transition: transform 0.4s ease-in-out;
+    }
+
+    /* Style untuk tombol toggle */
     #toggle-controls-btn {
-        position: absolute; top: 5px; left: -25px; width: 25px; height: 25px;
-        background-color: white; border: 1px solid #ccc; border-right: none;
-        border-radius: 5px 0 0 5px; cursor: pointer; display: flex;
-        align-items: center; justify-content: center;
+        position: absolute;
+        top: 5px;
+        left: -25px; /* Posisikan sedikit di luar box */
+        width: 25px;
+        height: 25px;
+        background-color: white;
+        border: 1px solid #ccc;
+        border-right: none;
+        border-radius: 5px 0 0 5px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         box-shadow: -2px 1px 5px rgba(0,0,0,0.2);
     }
-    #toggle-controls-btn i { transition: transform 0.4s; }
+    
+    #toggle-controls-btn i {
+        transition: transform 0.4s;
+    }
 
-    #controls.is-hidden { transform: translateX(calc(100% + 15px)); }
-    #controls.is-hidden #toggle-controls-btn i { transform: rotate(180deg); }
+    /* Style untuk panel saat disembunyikan */
+    #controls.is-hidden {
+        /* Geser panel ke kanan sejauh lebarnya + 15px agar hilang */
+        transform: translateX(calc(100% + 15px));
+    }
 
-    .leaflet-measure-window,
-    .leaflet-measure-resultspopup {
-        display: none !important;
+    /* Putar ikon panah saat panel disembunyikan */
+    #controls.is-hidden #toggle-controls-btn i {
+        transform: rotate(180deg);
     }
     </style>
 </head>
+
 <body>
     <div id="controls">
         <div id="toggle-controls-btn">
             <i class="fa fa-chevron-right"></i>
-        </div>      
+        </div>
+        
         <strong>Filter Sektor:</strong>
         <select id="sector-select-box" class="form-control" multiple="multiple"></select>
+
         <strong style="margin-top: 10px;">Pencarian Data:</strong>
         <input type="text" id="search-box" class="form-control" placeholder="Cari callsign, lokasi...">
+
         <div class="text-center" style="margin-top:8px;">
             <button class="btn btn-sm btn-primary" onclick="selectAll(true)">Expand All</button>
             <button class="btn btn-sm btn-danger" onclick="selectAll(false)">Collapse All</button>
@@ -79,17 +117,19 @@
     </div>
     
     <div id="notification"></div>
+    
     <div id="map"></div>
     
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
-    <script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.js"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC-qCWLhkjYc9IYNztAWPmPatlxhCqKzR8&callback=initMap" async defer></script>
+    
+    <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC-qCWLhkjYc9IYNztAWPmPatlxhCqKzR8&callback=initMap" async defer></script>
+    
     <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@latest/dist/Leaflet.GoogleMutant.js"></script>
 
     <script>
@@ -271,7 +311,6 @@ function performSearch() {
             const uniqueSectors = [...new Set(results.map(result => result.item.sector))];
             sectorSelect.val(uniqueSectors).trigger('change', ['triggered_by_search']);
         } else {
-            // Ganti alert() dengan notifikasi custom
             showNotification('Data tidak ditemukan');
         }
     }
@@ -353,78 +392,46 @@ function updateMarkerPopupsWithLogs() {
     });
 }
     // --- JALANKAN APLIKASI ---
-    function initMap() {
-        $(document).ready(function() {
-            fetch('config.json')
-                .then(response => response.json())
-                .then(configData => {
-                    mapConfig = configData;
-                    initializeApp();
-                    createLayers();
-                    
-                // 1. Inisialisasi Kontrol Ruler (tetap diperlukan untuk membuat tombolnya)
-                const measureControl = L.control.measure({
-                    position: 'topleft',
-                    primaryLengthUnit: 'nauticalmiles',
-                    secondaryLengthUnit: 'kilometers',
-                    activeColor: '#0078A8',
-                    completedColor: '#00A884'
-                });
-                measureControl.addTo(map);
+function initMap() {
+    fetch('config.json')
+        .then(response => response.json())
+        .then(configData => {
+            mapConfig = configData;
+            
+            initializeApp();
+            createLayers();
 
-                let clickCount = 0;
-                let firstPoint = null;
+            $('#sector-select-box').select2({
+                placeholder: 'Pilih satu/lebih sektor...',
+                allowClear: true
+            });
+            
+            $('#sector-select-box').on('change', function (e, triggerSource) {
+                if (triggerSource !== 'triggered_by_search') {
+                    $('#search-box').val('');
+                }
+                filterBySector();
+            });
+            
+            $('#search-box').on('keydown', function (event) {
+                if (event.key === 'Enter' || event.keyCode === 13) {
+                    performSearch();
+                }
+            });
 
-                map.on('measurestart', function() {
-                    clickCount = 0;
-                    firstPoint = null;
-                });
-
-                map.on('click', function(e) {
-                    if (measureControl._measuring) {
-                        clickCount++;
-                        if (clickCount === 1) {
-                            firstPoint = e.latlng;
-                        } else if (clickCount === 2) {
-                            measureControl._finishMeasure();
-                        }
-                    }
-                });
-
-                map.on('measurefinish', function(e) {
-                    if (!firstPoint) return; // Mencegah error jika pengukuran di-cancel
-                    const distanceInNm = e.length;
-                    const lastPoint = e.lastpoint;
-                    const midpoint = L.latLng((firstPoint.lat + lastPoint.lat) / 2, (firstPoint.lng + lastPoint.lng) / 2);
-                    const popupContent = `<div style="text-align: center;"><strong style="font-size: 14px;">Hasil Pengukuran</strong><br><span style="font-size: 18px; color: #0078A8; font-weight: bold;">${distanceInNm.toFixed(2)} NM</span></div>`;
-                    L.popup().setLatLng(midpoint).setContent(popupContent).openOn(map);
-                });
-
-                    $('#sector-select-box').select2({
-                        placeholder: 'Pilih satu/lebih sektor...',
-                        allowClear: true
-                    });
-                    $('#sector-select-box').on('change', function (e, triggerSource) {
-                        if (triggerSource !== 'triggered_by_search') { $('#search-box').val(''); }
-                        filterBySector();
-                    });
-                    $('#search-box').on('keydown', function (event) {
-                        if (event.key === 'Enter' || event.keyCode === 13) { performSearch(); }
-                    });
-                    $('#toggle-controls-btn').on('click', function() {
-                        $('#controls').toggleClass('is-hidden');
-                    });
-                    
-                    selectAll(true);
-                    loadDynamicData();
-                    buildSearchIndex();
-                })
-                .catch(error => {
-                    console.error('Gagal memuat file konfigurasi:', error);
-                    document.getElementById('map').innerHTML = '<h2>Error: Gagal memuat data peta.</h2>';
-                });
+            $('#toggle-controls-btn').on('click', function() {
+                $('#controls').toggleClass('is-hidden');
+            });
+            
+            selectAll(true);
+            loadDynamicData();
+            buildSearchIndex();
+        })
+        .catch(error => {
+            console.error('Gagal memuat file konfigurasi:', error);
+            document.getElementById('map').innerHTML = '<h2>Error: Gagal memuat data peta.</h2>';
         });
-    }
+}
 </script>
 </body>
 </html>

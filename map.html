@@ -102,7 +102,6 @@
         </div>
         
         <strong>Filter Sektor:</strong>
-        </div>
         <select id="sector-select-box" class="form-control" multiple="multiple"></select>
 
         <strong style="margin-top: 10px;">Pencarian Data:</strong>
@@ -222,7 +221,7 @@ function showNotification(message) {
                 }
             });
             filterBySector();
-                        updateMarkerPopupsWithLogs();
+            updateMarkerPopupsWithLogs();
             buildSearchIndex();
         }).catch(error => console.error('Gagal mengambil data:', error));
     }
@@ -391,6 +390,22 @@ function performSearch() {
     });
 }
 
+function updateMarkerPopupsWithLogs() {
+    mapConfig.locations.forEach(loc => {
+        if (!loc._marker) return;
+        const varnameUpper = loc.varname.toUpperCase();
+        const logs = radioLogs[varnameUpper];
+        let logText = "No logs found for this station.";
+        if (logs && logs.length > 0) {
+            logText = logs.slice(-5).map(log => {
+                const date = formatDate(log.date) || '-';
+                return `Date: ${date} | ${log.callsign || '-'} | FL${log.level || '-'} | Read: ${log.readibility || '-'}`;
+            }).join("<br>");
+        }
+        const popupContent = `<b>${loc.name}</b> (${loc.sector})<br><i>${loc.varname}</i><br><small>${mapConfig.sectorDescriptions[loc.sector] || ""}</small><hr style="margin: 5px 0;"><b>Last Logs:</b><br>${logText}`;
+        loc._marker.bindPopup(popupContent);
+    });
+}
     // --- JALANKAN APLIKASI ---
 $(document).ready(function() {
     fetch('config.json')

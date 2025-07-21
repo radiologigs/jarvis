@@ -95,19 +95,15 @@
     }
     </style>
 </head>
-
 <body>
     <div id="controls">
         <div id="toggle-controls-btn">
             <i class="fa fa-chevron-right"></i>
-        </div>
-        
+        </div>      
         <strong>Filter Sektor:</strong>
         <select id="sector-select-box" class="form-control" multiple="multiple"></select>
-
         <strong style="margin-top: 10px;">Pencarian Data:</strong>
         <input type="text" id="search-box" class="form-control" placeholder="Cari callsign, lokasi...">
-
         <div class="text-center" style="margin-top:8px;">
             <button class="btn btn-sm btn-primary" onclick="selectAll(true)">Expand All</button>
             <button class="btn btn-sm btn-danger" onclick="selectAll(false)">Collapse All</button>
@@ -232,15 +228,6 @@ function showNotification(message) {
         map.addLayer(stationClusterGroup);
         map.addLayer(logClusterGroup);
     }
-    const measureControl = L.control.measure({
-        position: 'topleft',
-        primaryLengthUnit: 'nauticalmiles',
-        secondaryLengthUnit: 'kilometers',
-        primaryAreaUnit: 'sqmeters',
-        activeColor: '#0078A8',
-        completedColor: '#00A884'
-    });
-    measureControl.addTo(map);
 
     function onPolygonClick(e) {
         const clickedSector = e.target.sectorName;
@@ -406,62 +393,43 @@ function updateMarkerPopupsWithLogs() {
                     mapConfig = configData;
                     initializeApp();
                     createLayers();
-
-                                const measureControl = L.control.measure({
-                position: 'topleft',
-                primaryLengthUnit: 'nauticalmiles',
-                secondaryLengthUnit: 'kilometers',
-                activeColor: '#0078A8',
-                completedColor: '#00A884'
-            });
-            measureControl.addTo(map);
-
-            let clickCount = 0;
-            let firstPoint = null;
-
-            map.on('measurestart', function() {
-                clickCount = 0;
-                firstPoint = null;
-                $('.leaflet-measure-resultspopup').hide();
-            });
-
-            map.on('click', function(e) {
-                if (measureControl._measuring) {
-                    clickCount++;
-                    if (clickCount === 1) {
-                        firstPoint = e.latlng;
-                    } else if (clickCount === 2) {
-                        measureControl._finishMeasure();
-                    }
-                }
-            });
-
-            map.on('measurefinish', function(e) {
-                const distanceInNm = e.length;
-                const lastPoint = e.lastpoint;
-                const midpoint = L.latLng((firstPoint.lat + lastPoint.lat) / 2, (firstPoint.lng + lastPoint.lng) / 2);
-                const popupContent = `<div style="text-align: center;"><strong style="font-size: 14px;">Hasil Pengukuran</strong><br><span style="font-size: 18px; color: #0078A8; font-weight: bold;">${distanceInNm.toFixed(2)} NM</span></div>`;
-                L.popup().setLatLng(midpoint).setContent(popupContent).openOn(map);
-            });
                     
+                    const measureControl = L.control.measure({
+                        position: 'topleft', primaryLengthUnit: 'nauticalmiles', secondaryLengthUnit: 'kilometers',
+                        activeColor: '#0078A8', completedColor: '#00A884'
+                    });
+                    measureControl.addTo(map);
+
+                    let clickCount = 0, firstPoint = null;
+                    map.on('measurestart', function() {
+                        clickCount = 0; firstPoint = null;
+                        $('.leaflet-measure-resultspopup').hide();
+                    });
+                    map.on('click', function(e) {
+                        if (measureControl._measuring) {
+                            clickCount++;
+                            if (clickCount === 1) { firstPoint = e.latlng; } 
+                            else if (clickCount === 2) { measureControl._finishMeasure(); }
+                        }
+                    });
+                    map.on('measurefinish', function(e) {
+                        const distanceInNm = e.length, lastPoint = e.lastpoint;
+                        const midpoint = L.latLng((firstPoint.lat + lastPoint.lat) / 2, (firstPoint.lng + lastPoint.lng) / 2);
+                        const popupContent = `<div style="text-align: center;"><strong style="font-size: 14px;">Hasil Pengukuran</strong><br><span style="font-size: 18px; color: #0078A8; font-weight: bold;">${distanceInNm.toFixed(2)} NM</span></div>`;
+                        L.popup().setLatLng(midpoint).setContent(popupContent).openOn(map);
+                    });
+
                     $('#sector-select-box').select2({
                         placeholder: 'Pilih satu/lebih sektor...',
                         allowClear: true
                     });
-                    
                     $('#sector-select-box').on('change', function (e, triggerSource) {
-                        if (triggerSource !== 'triggered_by_search') {
-                            $('#search-box').val('');
-                        }
+                        if (triggerSource !== 'triggered_by_search') { $('#search-box').val(''); }
                         filterBySector();
                     });
-                    
                     $('#search-box').on('keydown', function (event) {
-                        if (event.key === 'Enter' || event.keyCode === 13) {
-                            performSearch();
-                        }
+                        if (event.key === 'Enter' || event.keyCode === 13) { performSearch(); }
                     });
-
                     $('#toggle-controls-btn').on('click', function() {
                         $('#controls').toggleClass('is-hidden');
                     });

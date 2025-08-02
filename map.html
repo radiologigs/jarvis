@@ -1,18 +1,21 @@
 <!DOCTYPE html>
 <html>
 <head>
+<!DOCTYPE html>
+<html>
+<head>
     <meta charset="utf-8" />
     <title>JATSC Radio Visual Information System (JARVIS)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/MarkerCluster.css"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/MarkerCluster.Default.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css" />
 
     <style>
         html, body, #map { height: 100%; margin: 0; padding: 0; }
@@ -26,73 +29,30 @@
             background: white; padding: 8px; border-radius: 6px;
             box-shadow: 0 1px 5px rgba(0,0,0,0.4);
             width: 45vw; max-width: 220px; min-width: 180px;
+            transition: transform 0.4s ease-in-out;
         }
         #controls strong { font-size: 13px; margin-bottom: 4px; display: block; }
         #controls .btn { padding: 3px 8px; font-size: 12px; }
-        .select2-container--default .select2-selection--multiple {
-            border: 1px solid #ccc; border-radius: 4px;
+        .select2-container--default .select2-selection--multiple { border: 1px solid #ccc; border-radius: 4px; }
+        .select2-container { width: 100% !important; }
+        #notification {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 2000; background-color: rgba(0, 0, 0, 0.75); color: white;
+            padding: 10px 20px; border-radius: 20px; font-size: 14px;
+            opacity: 0; visibility: hidden; transition: opacity 0.5s, visibility 0.5s;
         }
-        .select2-container {
-            width: 100% !important;
+        #notification.show { opacity: 1; visibility: visible; }
+        #toggle-controls-btn {
+            position: absolute; top: 5px; left: -25px; width: 25px; height: 25px;
+            background-color: white; border: 1px solid #ccc; border-right: none;
+            border-radius: 5px 0 0 5px; cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+            box-shadow: -2px 1px 5px rgba(0,0,0,0.2);
         }
-    #notification {
-        position: absolute;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 2000; /* Pastikan di atas segalanya */
-        background-color: rgba(0, 0, 0, 0.75);
-        color: white;
-        padding: 10px 20px;
-        border-radius: 20px;
-        font-size: 14px;
-        
-        /* Untuk efek fade */
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.5s, visibility 0.5s;
-    }
-
-    #notification.show {
-        opacity: 1;
-        visibility: visible;
-    }
-            #controls {
-        transition: transform 0.4s ease-in-out;
-    }
-
-    /* Style untuk tombol toggle */
-    #toggle-controls-btn {
-        position: absolute;
-        top: 5px;
-        left: -25px; /* Posisikan sedikit di luar box */
-        width: 25px;
-        height: 25px;
-        background-color: white;
-        border: 1px solid #ccc;
-        border-right: none;
-        border-radius: 5px 0 0 5px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: -2px 1px 5px rgba(0,0,0,0.2);
-    }
-    
-    #toggle-controls-btn i {
-        transition: transform 0.4s;
-    }
-
-    /* Style untuk panel saat disembunyikan */
-    #controls.is-hidden {
-        /* Geser panel ke kanan sejauh lebarnya + 15px agar hilang */
-        transform: translateX(calc(100% + 15px));
-    }
-
-    /* Putar ikon panah saat panel disembunyikan */
-    #controls.is-hidden #toggle-controls-btn i {
-        transform: rotate(180deg);
-    }
+        #toggle-controls-btn i { transition: transform 0.4s; }
+        #controls.is-hidden { transform: translateX(calc(100% + 15px)); }
+        #controls.is-hidden #toggle-controls-btn i { transform: rotate(180deg); }
+        .leaflet-measure-window, .leaflet-measure-resultspopup { display: none !important; }
     </style>
 </head>
 <body>
@@ -100,7 +60,6 @@
         <div id="toggle-controls-btn">
             <i class="fa fa-chevron-right"></i>
         </div>
-        
         <strong>Filter Sektor:</strong>
         <select id="sector-select-box" class="form-control" multiple="multiple"></select>
         <strong style="margin-top: 10px;">Pencarian Data:</strong>
@@ -110,18 +69,19 @@
             <button class="btn btn-sm btn-danger" onclick="selectAll(false)">Collapse All</button>
         </div>
     </div>
-    
+
     <div id="notification"></div>
     <div id="map"></div>
     
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
-    <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC-qCWLhkjYc9IYNztAWPmPatlxhCqKzR8&callback=initMap" async defer></script>
+    <script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC-qCWLhkjYc9IYNztAWPmPatlxhCqKzR8&callback=initMap" async defer></script>
     <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@latest/dist/Leaflet.GoogleMutant.js"></script>
 
     <script>
@@ -490,3 +450,4 @@ function initMap() {
 </script>
 </body>
 </html>
+

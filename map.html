@@ -328,6 +328,13 @@ function performSearch() {
             map.removeLayer(coverageLayers[sector]);
         }
     }
+            if (coverageLayers[sector]) {
+        if (show) {
+            map.addLayer(coverageLayers[sector]);
+        } else {
+            map.removeLayer(coverageLayers[sector]);
+        }
+    }
         if (logMarkersBySector[sector]) {
             logMarkersBySector[sector].forEach(marker => {
                 show ? logClusterGroup.addLayer(marker) : logClusterGroup.removeLayer(marker);
@@ -425,5 +432,6 @@ function initMap() {
 </script>
 </body>
 </html>
+
 
 

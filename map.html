@@ -236,30 +236,33 @@ function showNotification(message) {
         selectBox.trigger('change');
     }
     
-    function createCoverageLayers() {
-        if (!mapConfig.sectorCoverageFiles) return;
-        for (const sector in mapConfig.sectorCoverageFiles) {
-            const url = mapConfig.sectorCoverageFiles[sector];
-            fetch(url)
-                .then(response => response.ok ? response.json() : Promise.reject(`HTTP error! status: ${response.status}`))
-                .then(data => {
-                    const geoJsonLayer = L.geoJSON(data, {
-                        style: feature => ({
-                            color: feature.properties.color, weight: 1,
-                            fillColor: feature.properties.color, fillOpacity: 0.5
-                        })
-                    });
-                    coverageLayers[sector] = geoJsonLayer;
-                    console.log(`✅ Berhasil membuat layer coverage untuk sektor: ${sector}`);
-                    // Setelah layer siap, langsung coba tampilkan jika seharusnya terlihat
-                    const selectedSectors = $('#sector-select-box').val() || [];
-                    if (selectedSectors.length === 0 || selectedSectors.includes(sector)) {
-                         map.addLayer(geoJsonLayer);
-                    }
-                })
-                .catch(error => console.error(`❌ Gagal memuat coverage file untuk ${sector}:`, error));
-        }
+function createCoverageLayers() {
+    if (!mapConfig.sectorCoverageFiles) { return Promise.resolve([]); }
+    const coveragePromises = [];
+    for (const sector in mapConfig.sectorCoverageFiles) {
+        const url = mapConfig.sectorCoverageFiles[sector];
+        const promise = fetch(url)
+            .then(response => response.ok ? response.json() : Promise.reject(`HTTP error! status: ${response.status}`))
+            .then(data => {
+                const geoJsonLayer = L.geoJSON(data, {
+                    style: feature => ({
+                        color: feature.properties.color, weight: 1,
+                        fillColor: feature.properties.color, fillOpacity: 0.5
+                    })
+                });
+                coverageLayers[sector] = geoJsonLayer;
+
+                // --- BAGIAN TES ---
+                // Langsung tambahkan ke peta untuk melihat apakah layernya valid
+                geoJsonLayer.addTo(map);
+                console.log(`✅ Layer untuk ${sector} langsung ditambahkan ke peta untuk tes.`);
+
+                return { sector, data };
+            });
+        coveragePromises.push(promise);
     }
+    return Promise.all(coveragePromises);
+}
 
     function buildSearchIndex() {
         const searchData = mapConfig.locations.map(loc => {
@@ -318,20 +321,7 @@ function performSearch() {
         if (polygonLayers[sector]) {
             polygonLayers[sector].setStyle(show ? visibleStyle : invisibleStyle);
         }
-            if (coverageLayers[sector]) {
-        if (show) {
-            map.addLayer(coverageLayers[sector]);
-        } else {
-            map.removeLayer(coverageLayers[sector]);
-        }
-    }
-            if (coverageLayers[sector]) {
-        if (show) {
-            map.addLayer(coverageLayers[sector]);
-        } else {
-            map.removeLayer(coverageLayers[sector]);
-        }
-    }
+
         if (logMarkersBySector[sector]) {
             logMarkersBySector[sector].forEach(marker => {
                 show ? logClusterGroup.addLayer(marker) : logClusterGroup.removeLayer(marker);
@@ -428,9 +418,3 @@ function initMap() {
 </script>
 </body>
 </html>
-
-
-
-
-
-

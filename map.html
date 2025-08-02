@@ -237,31 +237,37 @@ function showNotification(message) {
     }
     
 function createCoverageLayers() {
-    if (!mapConfig.sectorCoverageFiles) { return Promise.resolve([]); }
-    const coveragePromises = [];
+    if (!mapConfig.sectorCoverageFiles) return;
+
+    const coverageControlLayers = {}; // Wadah untuk menu kontrol
+
+    // Menggunakan Promise.all untuk menunggu semua file di-load
+    const allPromises = [];
+
     for (const sector in mapConfig.sectorCoverageFiles) {
-        const url = mapConfig.sectorCoverageFiles[sector];
-        const promise = fetch(url)
-            .then(response => response.ok ? response.json() : Promise.reject(`HTTP error! status: ${response.status}`))
-            .then(data => {
-                const geoJsonLayer = L.geoJSON(data, {
-                    style: feature => ({
-                        color: feature.properties.color, weight: 1,
-                        fillColor: feature.properties.color, fillOpacity: 0.5
-                    })
-                });
-                coverageLayers[sector] = geoJsonLayer;
-
-                // --- BAGIAN TES ---
-                // Langsung tambahkan ke peta untuk melihat apakah layernya valid
-                geoJsonLayer.addTo(map);
-                console.log(`✅ Layer untuk ${sector} langsung ditambahkan ke peta untuk tes.`);
-
-                return { sector, data };
-            });
-        coveragePromises.push(promise);
+        mapConfig.sectorCoverageFiles[sector].forEach(layerInfo => {
+            const promise = fetch(layerInfo.url)
+                .then(response => response.ok ? response.json() : Promise.reject(`HTTP error!`))
+                .then(data => {
+                    const geoJsonLayer = L.geoJSON(data, {
+                        style: feature => ({
+                            color: feature.properties.color, weight: 1,
+                            fillColor: feature.properties.color, fillOpacity: 0.5
+                        })
+                    });
+                    // Daftarkan layer ke wadah kontrol dengan nama yang deskriptif
+                    coverageControlLayers[layerInfo.name] = geoJsonLayer;
+                })
+                .catch(error => console.error(`Gagal memuat ${layerInfo.url}:`, error));
+            allPromises.push(promise);
+        });
     }
-    return Promise.all(coveragePromises);
+
+    // Setelah semua proses fetch selesai, baru tampilkan kontrolnya
+    Promise.all(allPromises).then(() => {
+        L.control.layers(null, coverageControlLayers, { collapsed: false, position: 'topright' }).addTo(map);
+        console.log("✅ Kontrol layer coverage berhasil dibuat.");
+    });
 }
 
     function buildSearchIndex() {
@@ -418,3 +424,4 @@ function initMap() {
 </script>
 </body>
 </html>
+

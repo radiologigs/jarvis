@@ -144,6 +144,7 @@
     let radioLogs = {};
     let mapConfig;
     let fuse;
+    let coverageLayers = {};
     const visibleStyle = { opacity: 1, fillOpacity: 0.3 };
     const invisibleStyle = { opacity: 0, fillOpacity: 0 };
 
@@ -296,6 +297,33 @@ function showNotification(message) {
         fuse = new Fuse(searchData, options);
         console.log("Search index updated.");
     }
+        function createCoverageLayers() {
+    // Cek apakah ada data file coverage di config
+    if (!mapConfig.sectorCoverageFiles) return;
+
+    for (const sector in mapConfig.sectorCoverageFiles) {
+        const url = mapConfig.sectorCoverageFiles[sector];
+        
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                const geoJsonLayer = L.geoJSON(data, {
+                    style: function(feature) {
+                        // Atur warna poligon sesuai properti 'color' dari hasil konversi
+                        return {
+                            color: feature.properties.color, // Warna garis batas
+                            weight: 1,
+                            fillColor: feature.properties.color, // Warna isian
+                            fillOpacity: 0.5
+                        };
+                    }
+                });
+                // Simpan layer ke variabel global
+                coverageLayers[sector] = geoJsonLayer;
+            })
+            .catch(error => console.error(`Gagal memuat coverage file untuk ${sector}:`, error));
+    }
+}
 
 function performSearch() {
     const searchBox = document.getElementById('search-box');
@@ -340,6 +368,13 @@ function performSearch() {
         if (polygonLayers[sector]) {
             polygonLayers[sector].setStyle(show ? visibleStyle : invisibleStyle);
         }
+            if (coverageLayers[sector]) {
+        if (show) {
+            map.addLayer(coverageLayers[sector]);
+        } else {
+            map.removeLayer(coverageLayers[sector]);
+        }
+    }
         if (logMarkersBySector[sector]) {
             logMarkersBySector[sector].forEach(marker => {
                 show ? logClusterGroup.addLayer(marker) : logClusterGroup.removeLayer(marker);
@@ -435,3 +470,4 @@ function initMap() {
 </script>
 </body>
 </html>
+

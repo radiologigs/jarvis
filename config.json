@@ -359,5 +359,9 @@
       [-2.156944444,106.1402778],[-0.833333333,106],
       [-0.113333333,107.7283333]
     ]
+        "sectorCoverageFiles": {
+        "UMDN": "data/UMDN_PKU_FL100_FL275_FL400.geojson",
+        "UPKU": "data/UMDN_SBR_40M_FL100_FL275_FL400.geojson",
+        "UPKP": "data/UMDN_SBR_FL_300_FL400.geojson"
   }
 }

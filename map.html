@@ -3,11 +3,9 @@
 <head>
     <meta charset="utf-8" />
     <title>JATSC Radio Visual Information System (JARVIS)</title>
-
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/MarkerCluster.css"/>
@@ -97,7 +95,6 @@
     }
     </style>
 </head>
-
 <body>
     <div id="controls">
         <div id="toggle-controls-btn">
@@ -106,10 +103,8 @@
         
         <strong>Filter Sektor:</strong>
         <select id="sector-select-box" class="form-control" multiple="multiple"></select>
-
         <strong style="margin-top: 10px;">Pencarian Data:</strong>
         <input type="text" id="search-box" class="form-control" placeholder="Cari callsign, lokasi...">
-
         <div class="text-center" style="margin-top:8px;">
             <button class="btn btn-sm btn-primary" onclick="selectAll(true)">Expand All</button>
             <button class="btn btn-sm btn-danger" onclick="selectAll(false)">Collapse All</button>
@@ -117,7 +112,6 @@
     </div>
     
     <div id="notification"></div>
-    
     <div id="map"></div>
     
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -127,9 +121,7 @@
     <script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
-    
     <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC-qCWLhkjYc9IYNztAWPmPatlxhCqKzR8&callback=initMap" async defer></script>
-    
     <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@latest/dist/Leaflet.GoogleMutant.js"></script>
 
     <script>
@@ -283,21 +275,8 @@ function showNotification(message) {
         });
         selectBox.trigger('change');
     }
-
-    function buildSearchIndex() {
-        const searchData = mapConfig.locations.map(loc => {
-            const logs = radioLogs[loc.varname.toUpperCase()] || [];
-            const frequencyInfo = mapConfig.sectorDescriptions[loc.sector] || '';
-            return { ...loc, logs, frequency: frequencyInfo, _marker: loc._marker };
-        });
-        const options = {
-            includeScore: true, threshold: 0.3,
-            keys: ['name', 'varname', 'sector', 'logs.callsign', 'frequency']
-        };
-        fuse = new Fuse(searchData, options);
-        console.log("Search index updated.");
-    }
-        function createCoverageLayers() {
+    
+    function createCoverageLayers() {
     // Cek apakah ada data file coverage di config
     if (!mapConfig.sectorCoverageFiles) return;
 
@@ -324,6 +303,20 @@ function showNotification(message) {
             .catch(error => console.error(`Gagal memuat coverage file untuk ${sector}:`, error));
     }
 }
+
+    function buildSearchIndex() {
+        const searchData = mapConfig.locations.map(loc => {
+            const logs = radioLogs[loc.varname.toUpperCase()] || [];
+            const frequencyInfo = mapConfig.sectorDescriptions[loc.sector] || '';
+            return { ...loc, logs, frequency: frequencyInfo, _marker: loc._marker };
+        });
+        const options = {
+            includeScore: true, threshold: 0.3,
+            keys: ['name', 'varname', 'sector', 'logs.callsign', 'frequency']
+        };
+        fuse = new Fuse(searchData, options);
+        console.log("Search index updated.");
+    }
 
 function performSearch() {
     const searchBox = document.getElementById('search-box');
@@ -436,6 +429,33 @@ function initMap() {
             initializeApp();
             createLayers();
 
+                            createCoverageLayers();
+
+                const measureControl = L.control.measure({
+                    position: 'topleft', primaryLengthUnit: 'nauticalmiles', secondaryLengthUnit: 'kilometers',
+                    activeColor: '#0078A8', completedColor: '#00A884'
+                });
+                measureControl.addTo(map);
+
+                let clickCount = 0, firstPoint = null;
+                map.on('measurestart', function() {
+                    clickCount = 0; firstPoint = null;
+                });
+                map.on('click', function(e) {
+                    if (measureControl._measuring) {
+                        clickCount++;
+                        if (clickCount === 1) { firstPoint = e.latlng; } 
+                        else if (clickCount === 2) { measureControl._finishMeasure(); }
+                    }
+                });
+                map.on('measurefinish', function(e) {
+                    if (!firstPoint) return;
+                    const distanceInNm = e.length, lastPoint = e.lastpoint;
+                    const midpoint = L.latLng((firstPoint.lat + lastPoint.lat) / 2, (firstPoint.lng + lastPoint.lng) / 2);
+                    const popupContent = `<div style="text-align: center;"><strong style="font-size: 14px;">Hasil Pengukuran</strong><br><span style="font-size: 18px; color: #0078A8; font-weight: bold;">${distanceInNm.toFixed(2)} NM</span></div>`;
+                    L.popup().setLatLng(midpoint).setContent(popupContent).openOn(map);
+                });
+
             $('#sector-select-box').select2({
                 placeholder: 'Pilih satu/lebih sektor...',
                 allowClear: true
@@ -470,4 +490,5 @@ function initMap() {
 </script>
 </body>
 </html>
+
 

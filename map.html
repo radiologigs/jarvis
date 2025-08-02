@@ -393,7 +393,38 @@ function initMap() {
             initializeApp();
             createLayers();
 
-                            createCoverageLayers();
+                const coveragePromises = [];
+                if (mapConfig.sectorCoverageFiles) {
+                    for (const sector in mapConfig.sectorCoverageFiles) {
+                        const url = mapConfig.sectorCoverageFiles[sector];
+                        // Setiap fetch adalah sebuah 'janji' (Promise)
+                        const promise = fetch(url)
+                            .then(response => response.ok ? response.json() : Promise.reject(`HTTP error! status: ${response.status}`))
+                            .then(data => ({ sector, data })); // Kembalikan data bersama nama sektornya
+                        coveragePromises.push(promise);
+                    }
+                }
+
+                // 2. Tunggu SEMUA janji selesai
+                Promise.all(coveragePromises)
+                    .then(results => {
+                        // 'results' adalah array dari semua hasil download
+                        results.forEach(result => {
+                            const { sector, data } = result;
+                            const geoJsonLayer = L.geoJSON(data, {
+                                style: feature => ({
+                                    color: feature.properties.color, weight: 1,
+                                    fillColor: feature.properties.color, fillOpacity: 0.5
+                                })
+                            });
+                            coverageLayers[sector] = geoJsonLayer;
+                            console.log(`✅ Berhasil membuat layer coverage untuk sektor: ${sector}`);
+                        });
+
+                        // 3. SETELAH SEMUA DATA SIAP, BARU JALANKAN SISA APLIKASI
+                        $('#sector-select-box').select2({
+                            placeholder: 'Pilih satu/lebih sektor...',
+                            allowClear: true
 
             $('#sector-select-box').select2({
                 placeholder: 'Pilih satu/lebih sektor...',
@@ -429,6 +460,7 @@ function initMap() {
 </script>
 </body>
 </html>
+
 
 
 

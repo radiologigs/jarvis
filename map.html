@@ -237,32 +237,29 @@ function showNotification(message) {
     }
     
     function createCoverageLayers() {
-    // Cek apakah ada data file coverage di config
-    if (!mapConfig.sectorCoverageFiles) return;
-
-    for (const sector in mapConfig.sectorCoverageFiles) {
-        const url = mapConfig.sectorCoverageFiles[sector];
-        
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                const geoJsonLayer = L.geoJSON(data, {
-                    style: function(feature) {
-                        // Atur warna poligon sesuai properti 'color' dari hasil konversi
-                        return {
-                            color: feature.properties.color, // Warna garis batas
-                            weight: 1,
-                            fillColor: feature.properties.color, // Warna isian
-                            fillOpacity: 0.5
-                        };
+        if (!mapConfig.sectorCoverageFiles) return;
+        for (const sector in mapConfig.sectorCoverageFiles) {
+            const url = mapConfig.sectorCoverageFiles[sector];
+            fetch(url)
+                .then(response => response.ok ? response.json() : Promise.reject(`HTTP error! status: ${response.status}`))
+                .then(data => {
+                    const geoJsonLayer = L.geoJSON(data, {
+                        style: feature => ({
+                            color: feature.properties.color, weight: 1,
+                            fillColor: feature.properties.color, fillOpacity: 0.5
+                        })
+                    });
+                    coverageLayers[sector] = geoJsonLayer;
+                    console.log(`✅ Berhasil membuat layer coverage untuk sektor: ${sector}`);
+                    // Setelah layer siap, langsung coba tampilkan jika seharusnya terlihat
+                    const selectedSectors = $('#sector-select-box').val() || [];
+                    if (selectedSectors.length === 0 || selectedSectors.includes(sector)) {
+                         map.addLayer(geoJsonLayer);
                     }
-                });
-                // Simpan layer ke variabel global
-                coverageLayers[sector] = geoJsonLayer;
-            })
-            .catch(error => console.error(`Gagal memuat coverage file untuk ${sector}:`, error));
+                })
+                .catch(error => console.error(`❌ Gagal memuat coverage file untuk ${sector}:`, error));
+        }
     }
-}
 
     function buildSearchIndex() {
         const searchData = mapConfig.locations.map(loc => {
@@ -432,6 +429,7 @@ function initMap() {
 </script>
 </body>
 </html>
+
 
 
 

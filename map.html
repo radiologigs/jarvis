@@ -235,40 +235,6 @@ function showNotification(message) {
         });
         selectBox.trigger('change');
     }
-    
-function createCoverageLayers() {
-    if (!mapConfig.sectorCoverageFiles) return;
-
-    const coverageControlLayers = {}; // Wadah untuk menu kontrol
-
-    // Menggunakan Promise.all untuk menunggu semua file di-load
-    const allPromises = [];
-
-    for (const sector in mapConfig.sectorCoverageFiles) {
-        mapConfig.sectorCoverageFiles[sector].forEach(layerInfo => {
-            const promise = fetch(layerInfo.url)
-                .then(response => response.ok ? response.json() : Promise.reject(`HTTP error!`))
-                .then(data => {
-                    const geoJsonLayer = L.geoJSON(data, {
-                        style: feature => ({
-                            color: feature.properties.color, weight: 1,
-                            fillColor: feature.properties.color, fillOpacity: 0.5
-                        })
-                    });
-                    // Daftarkan layer ke wadah kontrol dengan nama yang deskriptif
-                    coverageControlLayers[layerInfo.name] = geoJsonLayer;
-                })
-                .catch(error => console.error(`Gagal memuat ${layerInfo.url}:`, error));
-            allPromises.push(promise);
-        });
-    }
-
-    // Setelah semua proses fetch selesai, baru tampilkan kontrolnya
-    Promise.all(allPromises).then(() => {
-        L.control.layers(null, coverageControlLayers, { collapsed: false, position: 'topright' }).addTo(map);
-        console.log("✅ Kontrol layer coverage berhasil dibuat.");
-    });
-}
 
     function buildSearchIndex() {
         const searchData = mapConfig.locations.map(loc => {
@@ -379,6 +345,35 @@ function updateMarkerPopupsWithLogs() {
         loc._marker.bindPopup(popupContent);
     });
 }
+    function setupCoverageLayers(mapConfig) {
+        if (!mapConfig.sectorCoverageFiles) return;
+
+        const coverageControlLayers = {};
+        const allPromises = [];
+
+        for (const sector in mapConfig.sectorCoverageFiles) {
+            mapConfig.sectorCoverageFiles[sector].forEach(layerInfo => {
+                const promise = fetch(layerInfo.url)
+                    .then(response => response.ok ? response.json() : Promise.reject(`HTTP error!`))
+                    .then(data => {
+                        const geoJsonLayer = L.geoJSON(data, {
+                            style: feature => ({
+                                color: feature.properties.color, weight: 1,
+                                fillColor: feature.properties.color, fillOpacity: 0.5
+                            })
+                        });
+                        coverageControlLayers[layerInfo.name] = geoJsonLayer;
+                    })
+                    .catch(error => console.error(`Gagal memuat ${layerInfo.url}:`, error));
+                allPromises.push(promise);
+            });
+        }
+
+        Promise.all(allPromises).then(() => {
+            L.control.layers(null, coverageControlLayers, { collapsed: false, position: 'topright' }).addTo(map);
+            console.log("✅ Kontrol layer coverage berhasil dibuat.");
+        });
+    }        
     // --- JALANKAN APLIKASI ---
 function initMap() {
     fetch('config.json')
@@ -388,7 +383,7 @@ function initMap() {
             
             initializeApp();
             createLayers();
-            createCoverageLayers();
+            setupCoverageLayers(mapConfig);
 
             $('#sector-select-box').select2({
                 placeholder: 'Pilih satu/lebih sektor...',
@@ -424,4 +419,5 @@ function initMap() {
 </script>
 </body>
 </html>
+
 

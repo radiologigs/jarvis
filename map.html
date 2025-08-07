@@ -100,21 +100,40 @@
     function onPolygonClick(e){const c=e.target.sectorName,s=$('#sector-select-box');let t=s.val()||[];const i=t.indexOf(c);if(i>-1){t.splice(i,1)}else{t.push(c)}s.val(t).trigger('change')}
     function createLayers(){const s=new Set();mapConfig.locations.forEach(l=>{s.add(l.sector);if(!sectorMarkers[l.sector]){sectorMarkers[l.sector]=[]}const i=L.AwesomeMarkers.icon({icon:'map-marker',prefix:'fa',markerColor:'blue'}),m=L.marker([l.latitude,l.longitude],{icon:i});m.bindTooltip(l.name,{sticky:!0});l._marker=m;sectorMarkers[l.sector].push(m)});for(const e in mapConfig.sectorPolygons){const o=L.polygon(mapConfig.sectorPolygons[e],{color:mapConfig.sectorColors[e]||'gray',weight:2,...invisibleStyle}).bindPopup(`<b>${e}</b><br>${mapConfig.sectorDescriptions[e]||"No description"}`).bindTooltip(e,{sticky:!0,direction:'center',className:'polygon-label'});o.sectorName=e;o.on('click',onPolygonClick);o.addTo(map);polygonLayers[e]=o}const t=$('#sector-select-box');t.empty();s.forEach(e=>{const o=new Option(e,e,!1,!1);t.append(o)});t.trigger('change')}
     function createCoverageLayers() {
-        const coveragePromises = [];
-        if (!mapConfig.sectorCoverageFiles) { return Promise.resolve([]); }
-        for (const sector in mapConfig.sectorCoverageFiles) {
-            const url = mapConfig.sectorCoverageFiles[sector];
-            const promise = fetch(url)
-                .then(response => response.ok ? response.json() : Promise.reject(`HTTP error! status: ${response.status}`))
-                .then(data => ({ sector, data }));
-            coveragePromises.push(promise);
-        }
-        return Promise.all(coveragePromises);
+    if (!mapConfig.sectorCoverageFiles) return;
+
+    const coverageControlLayers = {}; // Wadah untuk menu kontrol baru
+    const allPromises = [];
+
+    for (const sector in mapConfig.sectorCoverageFiles) {
+        mapConfig.sectorCoverageFiles[sector].forEach(layerInfo => {
+            const promise = fetch(layerInfo.url)
+                .then(response => response.ok ? response.json() : Promise.reject(`HTTP error!`))
+                .then(data => {
+                    const geoJsonLayer = L.geoJSON(data, {
+                        style: feature => ({
+                            color: feature.properties.color, weight: 1,
+                            fillColor: feature.properties.color, fillOpacity: 0.5
+                        })
+                    });
+                    // Daftarkan layer ke wadah kontrol dengan nama yang deskriptif
+                    coverageControlLayers[layerInfo.name] = geoJsonLayer;
+                })
+                .catch(error => console.error(`Gagal memuat ${layerInfo.url}:`, error));
+            allPromises.push(promise);
+        });
     }
+
+    // Setelah semua proses fetch selesai, baru tampilkan kontrolnya
+    Promise.all(allPromises).then(() => {
+        L.control.layers(null, coverageControlLayers, { collapsed: false, position: 'topright' }).addTo(map);
+        console.log("✅ Kontrol layer coverage berhasil dibuat.");
+    });
+}
     function buildSearchIndex(){const d=mapConfig.locations.map(l=>{const o=radioLogs[l.varname.toUpperCase()]||[],c=mapConfig.sectorDescriptions[l.sector]||'';return{...l,logs:o,frequency:c,_marker:l._marker}}),o={includeScore:!0,threshold:.3,keys:['name','varname','sector','logs.callsign','frequency']};fuse=new Fuse(d,o);console.log("Search index updated.")}
     function performSearch(){const e=document.getElementById('search-box'),t=e.value,o=$('#sector-select-box');if(t.trim()===''){o.val(null).trigger('change')}else{const c=fuse.search(t);if(c.length>0){const n=[...new Set(c.map(s=>s.item.sector))];o.val(n).trigger('change',['triggered_by_search'])}else{showNotification('Data tidak ditemukan')}}e.value=''}
     function filterBySector(){const s=$('#sector-select-box').val();if(!s||s.length===0){selectAll(!0);return}hideAllLayers();s.forEach(e=>{toggleSector(e,!0)})}
-    function toggleSector(s,h){if(sectorMarkers[s]){sectorMarkers[s].forEach(m=>{h?stationClusterGroup.addLayer(m):stationClusterGroup.removeLayer(m)})}if(polygonLayers[s]){polygonLayers[s].setStyle(h?visibleStyle:invisibleStyle)}if(coverageLayers[s]){h?map.addLayer(coverageLayers[s]):map.removeLayer(coverageLayers[s])}if(logMarkersBySector[s]){logMarkersBySector[s].forEach(m=>{h?logClusterGroup.addLayer(m):logClusterGroup.removeLayer(m)})}}
+    function toggleSector(s,h){if(sectorMarkers[s]){sectorMarkers[s].forEach(m=>{h?stationClusterGroup.addLayer(m):stationClusterGroup.removeLayer(m)})}if(polygonLayers[s]){polygonLayers[s].setStyle(h?visibleStyle:invisibleStyle)}if(logMarkersBySector[s]){logMarkersBySector[s].forEach(m=>{h?logClusterGroup.addLayer(m):logClusterGroup.removeLayer(m)})}}
     function selectAll(s){Object.keys(sectorMarkers).forEach(e=>toggleSector(e,s));if(s){$('#sector-select-box').val(null).trigger('change.select2');$('#search-box').val('')}}
     function hideAllLayers(){Object.keys(sectorMarkers).forEach(e=>toggleSector(e,!1))}
     function updateMarkerPopupsWithLogs(){mapConfig.locations.forEach(l=>{if(!l._marker)return;const t=l.varname.toUpperCase(),o=radioLogs[t];let c="No logs found for this station.";if(o&&o.length>0){c=o.slice(-5).map(s=>{const e=formatDate(s.date)||'-';return`Date: ${e} | ${s.callsign||'-'} | FL${s.level||'-'} | Read: ${s.readibility||'-'}`}).join("<br>")}const n=`<b>${l.name}</b> (${l.sector})<br><i>${l.varname}</i><br><small>${mapConfig.sectorDescriptions[l.sector]||""}</small><hr style="margin:5px 0"><b>Last Logs:</b><br>${c}`;l._marker.bindPopup(n)})}
@@ -175,3 +194,4 @@
 </script>
 </body>
 </html>
+

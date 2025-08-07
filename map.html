@@ -293,7 +293,13 @@ function performSearch() {
         if (polygonLayers[sector]) {
             polygonLayers[sector].setStyle(show ? visibleStyle : invisibleStyle);
         }
-
+        if (coverageLayers[sector]) {
+        if (show) {
+            map.addLayer(coverageLayers[sector]);
+        } else {
+            map.removeLayer(coverageLayers[sector]);
+        }
+    }
         if (logMarkersBySector[sector]) {
             logMarkersBySector[sector].forEach(marker => {
                 show ? logClusterGroup.addLayer(marker) : logClusterGroup.removeLayer(marker);
@@ -345,79 +351,86 @@ function updateMarkerPopupsWithLogs() {
         loc._marker.bindPopup(popupContent);
     });
 }
-    function setupCoverageLayers(mapConfig) {
-        if (!mapConfig.sectorCoverageFiles) return;
-
-        const coverageControlLayers = {};
-        const allPromises = [];
-
-        for (const sector in mapConfig.sectorCoverageFiles) {
-            mapConfig.sectorCoverageFiles[sector].forEach(layerInfo => {
-                const promise = fetch(layerInfo.url)
-                    .then(response => response.ok ? response.json() : Promise.reject(`HTTP error!`))
-                    .then(data => {
-                        const geoJsonLayer = L.geoJSON(data, {
-                            style: feature => ({
-                                color: feature.properties.color, weight: 1,
-                                fillColor: feature.properties.color, fillOpacity: 0.5
-                            })
-                        });
-                        coverageControlLayers[layerInfo.name] = geoJsonLayer;
-                    })
-                    .catch(error => console.error(`Gagal memuat ${layerInfo.url}:`, error));
-                allPromises.push(promise);
-            });
-        }
-
-        Promise.all(allPromises).then(() => {
-            L.control.layers(null, coverageControlLayers, { collapsed: false, position: 'topright' }).addTo(map);
-            console.log("✅ Kontrol layer coverage berhasil dibuat.");
+function setupCoverageLayers(mapConfig) {
+    const coveragePromises = [];
+    if (!mapConfig.sectorCoverageFiles) {
+        return Promise.resolve([]); // Kembalikan promise kosong jika tidak ada file
+    }
+    for (const sector in mapConfig.sectorCoverageFiles) {
+        mapConfig.sectorCoverageFiles[sector].forEach(layerInfo => {
+            const promise = fetch(layerInfo.url)
+                .then(response => response.ok ? response.json() : Promise.reject(`HTTP error!`))
+                .then(data => {
+                    // Buat layer GeoJSON dan kembalikan bersama info namanya
+                    const geoJsonLayer = L.geoJSON(data, {
+                        style: feature => ({
+                            color: feature.properties.color, weight: 1,
+                            fillColor: feature.properties.color, fillOpacity: 0.5
+                        })
+                    });
+                    return { name: layerInfo.name, layer: geoJsonLayer };
+                });
+            coveragePromises.push(promise);
         });
-    }        
+    }
+    return Promise.all(coveragePromises);
+}       
     // --- JALANKAN APLIKASI ---
+// Google akan memanggil fungsi ini secara otomatis setelah script-nya siap
 function initMap() {
-    fetch('config.json')
-        .then(response => response.json())
-        .then(configData => {
-            mapConfig = configData;
-            
-            initializeApp();
-            createLayers();
-            setupCoverageLayers(mapConfig);
+    $(document).ready(function() {
+        fetch('config.json')
+            .then(response => response.json())
+            .then(configData => {
+                mapConfig = configData;
+                initializeApp();
+                createLayers();
+                
+                // Panggil fungsi yang mengembalikan Promise
+                setupCoverageLayers(mapConfig)
+                    .then(results => {
+                        // 'results' adalah array berisi layer yang sudah siap
+                        const coverageControlLayers = {};
+                        results.forEach(result => {
+                            coverageControlLayers[result.name] = result.layer;
+                        });
 
-            $('#sector-select-box').select2({
-                placeholder: 'Pilih satu/lebih sektor...',
-                allowClear: true
-            });
-            
-            $('#sector-select-box').on('change', function (e, triggerSource) {
-                if (triggerSource !== 'triggered_by_search') {
-                    $('#search-box').val('');
-                }
-                filterBySector();
-            });
-            
-            $('#search-box').on('keydown', function (event) {
-                if (event.key === 'Enter' || event.keyCode === 13) {
-                    performSearch();
-                }
-            });
+                        // SETELAH SEMUA DATA SIAP, BARU BUAT KONTROL & JALANKAN SISA APLIKASI
+                        L.control.layers(null, coverageControlLayers, { collapsed: false, position: 'topright' }).addTo(map);
+                        console.log("✅ Kontrol layer coverage berhasil dibuat.");
 
-            $('#toggle-controls-btn').on('click', function() {
-                $('#controls').toggleClass('is-hidden');
+                        $('#sector-select-box').select2({
+                            placeholder: 'Pilih satu/lebih sektor...',
+                            allowClear: true
+                        });
+                        $('#sector-select-box').on('change', function (e, triggerSource) {
+                            if (triggerSource !== 'triggered_by_search') { $('#search-box').val(''); }
+                            filterBySector();
+                        });
+                        $('#search-box').on('keydown', function (event) {
+                            if (event.key === 'Enter' || event.keyCode === 13) { performSearch(); }
+                        });
+                        $('#toggle-controls-btn').on('click', function() {
+                            $('#controls').toggleClass('is-hidden');
+                        });
+                        
+                        selectAll(true);
+                        loadDynamicData();
+                        buildSearchIndex();
+                    })
+                    .catch(error => {
+                        console.error('Gagal dalam memuat satu atau lebih file coverage:', error);
+                    });
+            })
+            .catch(error => {
+                console.error('Gagal memuat file konfigurasi:', error);
+                document.getElementById('map').innerHTML = '<h2>Error: Gagal memuat data peta.</h2>';
             });
-            
-            selectAll(true);
-            loadDynamicData();
-            buildSearchIndex();
-        })
-        .catch(error => {
-            console.error('Gagal memuat file konfigurasi:', error);
-            document.getElementById('map').innerHTML = '<h2>Error: Gagal memuat data peta.</h2>';
-        });
+    });
 }
 </script>
 </body>
 </html>
+
 
 

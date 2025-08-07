@@ -99,18 +99,39 @@
     function initializeApp() { L.gridLayer.googleMutant({ type: 'roadmap' }).addTo(map); map.addLayer(stationClusterGroup); map.addLayer(logClusterGroup); }
     function onPolygonClick(e){const c=e.target.sectorName,s=$('#sector-select-box');let t=s.val()||[];const i=t.indexOf(c);if(i>-1){t.splice(i,1)}else{t.push(c)}s.val(t).trigger('change')}
     function createLayers(){const s=new Set();mapConfig.locations.forEach(l=>{s.add(l.sector);if(!sectorMarkers[l.sector]){sectorMarkers[l.sector]=[]}const i=L.AwesomeMarkers.icon({icon:'map-marker',prefix:'fa',markerColor:'blue'}),m=L.marker([l.latitude,l.longitude],{icon:i});m.bindTooltip(l.name,{sticky:!0});l._marker=m;sectorMarkers[l.sector].push(m)});for(const e in mapConfig.sectorPolygons){const o=L.polygon(mapConfig.sectorPolygons[e],{color:mapConfig.sectorColors[e]||'gray',weight:2,...invisibleStyle}).bindPopup(`<b>${e}</b><br>${mapConfig.sectorDescriptions[e]||"No description"}`).bindTooltip(e,{sticky:!0,direction:'center',className:'polygon-label'});o.sectorName=e;o.on('click',onPolygonClick);o.addTo(map);polygonLayers[e]=o}const t=$('#sector-select-box');t.empty();s.forEach(e=>{const o=new Option(e,e,!1,!1);t.append(o)});t.trigger('change')}
-    function createCoverageLayers() {
-        const coveragePromises = [];
-        if (!mapConfig.sectorCoverageFiles) { return Promise.resolve([]); }
-        for (const sector in mapConfig.sectorCoverageFiles) {
-            const url = mapConfig.sectorCoverageFiles[sector];
-            const promise = fetch(url)
-                .then(response => response.ok ? response.json() : Promise.reject(`HTTP error! status: ${response.status}`))
-                .then(data => ({ sector, data }));
-            coveragePromises.push(promise);
-        }
-        return Promise.all(coveragePromises);
+function createCoverageLayers() {
+    // Pastikan properti ini ada di config.json
+    if (!mapConfig.sectorCoverageFiles) {
+        console.log("Info: 'sectorCoverageFiles' tidak ditemukan di config.json.");
+        return;
     }
+
+    console.log("Mulai memuat file GeoJSON coverage...");
+
+    for (const sector in mapConfig.sectorCoverageFiles) {
+        mapConfig.sectorCoverageFiles[sector].forEach(layerInfo => {
+            fetch(layerInfo.url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Gagal fetch ${layerInfo.url}: Status ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log(`✅ SUKSES: Data untuk "${layerInfo.name}" berhasil di-load.`);
+                    L.geoJSON(data, {
+                        style: feature => ({
+                            color: feature.properties.color,
+                            weight: 1,
+                            fillColor: feature.properties.color,
+                            fillOpacity: 0.5
+                        })
+                    }).addTo(map); // <--- LANGSUNG TAMBAHKAN KE PETA
+                })
+                .catch(error => console.error(error));
+        });
+    }
+}
     function buildSearchIndex(){const d=mapConfig.locations.map(l=>{const o=radioLogs[l.varname.toUpperCase()]||[],c=mapConfig.sectorDescriptions[l.sector]||'';return{...l,logs:o,frequency:c,_marker:l._marker}}),o={includeScore:!0,threshold:.3,keys:['name','varname','sector','logs.callsign','frequency']};fuse=new Fuse(d,o);console.log("Search index updated.")}
     function performSearch(){const e=document.getElementById('search-box'),t=e.value,o=$('#sector-select-box');if(t.trim()===''){o.val(null).trigger('change')}else{const c=fuse.search(t);if(c.length>0){const n=[...new Set(c.map(s=>s.item.sector))];o.val(n).trigger('change',['triggered_by_search'])}else{showNotification('Data tidak ditemukan')}}e.value=''}
     function filterBySector(){const s=$('#sector-select-box').val();if(!s||s.length===0){selectAll(!0);return}hideAllLayers();s.forEach(e=>{toggleSector(e,!0)})}
@@ -175,3 +196,4 @@
 </script>
 </body>
 </html>
+

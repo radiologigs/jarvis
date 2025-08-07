@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
+<!DOCTYPE html>
+<html>
+<head>
     <meta charset="utf-8" />
     <title>JATSC Radio Visual Information System (JARVIS)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
@@ -13,6 +15,7 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css" />
 
     <style>
         html, body, #map { height: 100%; margin: 0; padding: 0; }
@@ -49,6 +52,7 @@
         #toggle-controls-btn i { transition: transform 0.4s; }
         #controls.is-hidden { transform: translateX(calc(100% + 15px)); }
         #controls.is-hidden #toggle-controls-btn i { transform: rotate(180deg); }
+        .leaflet-measure-window, .leaflet-measure-resultspopup { display: none !important; }
     </style>
 </head>
 <body>
@@ -76,7 +80,8 @@
     <script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC-qCWLhkjYc9IYNztAWPmPatlxhCqKzR8&callback=initMap"></script>
+    <script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC-qCWLhkjYc9IYNztAWPmPatlxhCqKzR8&callback=initMap" async defer></script>
     <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@latest/dist/Leaflet.GoogleMutant.js"></script>
 
     <script>
@@ -85,115 +90,332 @@
     L.control.zoom({ position: 'bottomleft' }).addTo(map);
     const stationClusterGroup = L.markerClusterGroup();
     const logClusterGroup = L.markerClusterGroup();
-    let polygonLayers = {}, sectorMarkers = {}, logMarkersBySector = {}, radioLogs = {}, mapConfig, fuse, coverageLayers = {};
-    const visibleStyle = { opacity: 1, fillOpacity: 0.3 }, invisibleStyle = { opacity: 0, fillOpacity: 0 };
+    let polygonLayers = {};
+    let sectorMarkers = {};
+    let logMarkersBySector = {};
+    let radioLogs = {};
+    let mapConfig;
+    let fuse;
+    let coverageLayers = {};
+    const visibleStyle = { opacity: 1, fillOpacity: 0.3 };
+    const invisibleStyle = { opacity: 0, fillOpacity: 0 };
 
     // --- FUNGSI-FUNGSI HELPER ---
-    function calculateDestinationPoint(lat, lon, bearing, distanceNm) { const R = 6371, distanceKm = distanceNm * 1.852; const latRad = (lat * Math.PI)/180, lonRad = (lon * Math.PI)/180, bearingRad = (bearing * Math.PI)/180; const lat2Rad = Math.asin(Math.sin(latRad) * Math.cos(distanceKm/R) + Math.cos(latRad) * Math.sin(distanceKm/R) * Math.cos(bearingRad)); const lon2Rad = lonRad + Math.atan2(Math.sin(bearingRad) * Math.sin(distanceKm/R) * Math.cos(latRad), Math.cos(distanceKm/R) - Math.sin(latRad) * Math.sin(lat2Rad)); return [(lat2Rad * 180)/Math.PI, (lon2Rad * 180)/Math.PI]; }
-    function getReadabilityColor(r) { const n = parseInt(r, 10); if (n>=4) return 'green'; if (n>=2) return 'yellow'; if (n>=0) return 'red'; return 'grey'; }
-    function formatDate(d) { if(typeof d==='string'&&d.includes('T')){d=new Date(d)} if(!(d instanceof Date)||isNaN(d)){return (typeof d==='string')?d.split('T')[0]:d} const D=String(d.getDate()).padStart(2,'0'),M=String(d.getMonth()+1).padStart(2,'0'),Y=d.getFullYear(); return `${D}/${M}/${Y}`}
-    function showNotification(msg) { const n=document.getElementById('notification'); n.textContent=msg; n.classList.add('show'); setTimeout(()=>n.classList.remove('show'),3000) }
+    function calculateDestinationPoint(lat, lon, bearing, distanceNm) {
+        const R = 6371; const distanceKm = distanceNm * 1.852;
+        const latRad = (lat * Math.PI) / 180; const lonRad = (lon * Math.PI) / 180; const bearingRad = (bearing * Math.PI) / 180;
+        const lat2Rad = Math.asin(Math.sin(latRad) * Math.cos(distanceKm / R) + Math.cos(latRad) * Math.sin(distanceKm / R) * Math.cos(bearingRad));
+        const lon2Rad = lonRad + Math.atan2(Math.sin(bearingRad) * Math.sin(distanceKm / R) * Math.cos(latRad), Math.cos(distanceKm / R) - Math.sin(latRad) * Math.sin(lat2Rad));
+        return [(lat2Rad * 180) / Math.PI, (lon2Rad * 180) / Math.PI];
+    }
+    function getReadabilityColor(readability) {
+        const r = parseInt(readability, 10);
+        if (r >= 4) return 'green'; if (r >= 2) return 'yellow'; if (r >= 0) return 'red'; return 'grey';
+    }
+        function formatDate(date) {
+    // Cek jika input adalah string tanggal ISO (YYYY-MM-DDTHH:mm:ss.sssZ)
+    if (typeof date === 'string' && date.includes('T')) {
+        date = new Date(date);
+    }
     
-    // --- FUNGSI-FUNGSI UTAMA APLIKASI ---
-    function loadDynamicData() { const apiUrl = 'https://script.google.com/macros/s/AKfycbysOsW_I0X2UxA6Gl0KwfFtFwG39imuqM4qfPPDl_alNh1TBWBIPB9kbbYvbKU3OZE/exec'; fetch(apiUrl).then(r=>r.json()).then(data=>{console.log("Data log dari GSheet:",data); const sMap={}; mapConfig.locations.forEach(l=>{sMap[l.varname.toUpperCase()]=l}); logClusterGroup.clearLayers(); logMarkersBySector={}; radioLogs={}; data.forEach(log=>{const v=(log.radio_id||"").trim().toUpperCase(),s=sMap[v]; if(v){if(!radioLogs[v]){radioLogs[v]=[]} radioLogs[v].push(log)} if(s&&log.radial!=null&&log.distance!=null){const d=calculateDestinationPoint(s.latitude,s.longitude,log.radial,log.distance),c=getReadabilityColor(log.readibility),m=L.circleMarker(d,{radius:6,color:c,fillColor:c,fillOpacity:0.9}),dt=formatDate(log.date)||'-',p=`<b>Log dari: ${s.name}</b><hr style="margin:5px 0"><b>Tanggal:</b> ${dt}<br><b>Callsign:</b> ${log.callsign||'-'}<br><b>Level:</b> FL${log.level||'-'}<br><b>Readability:</b> ${log.readibility||'-'}<br><b>Radial:</b> ${log.radial}°<br><b>Distance:</b> ${log.distance}nm`; m.bindPopup(p); const sc=s.sector; if(!logMarkersBySector[sc]){logMarkersBySector[sc]=[]} logMarkersBySector[sc].push(m)}}); filterBySector(); updateMarkerPopupsWithLogs(); buildSearchIndex()}).catch(e=>console.error('Gagal ambil data:',e)); }
-    function initializeApp() { L.gridLayer.googleMutant({ type: 'roadmap' }).addTo(map); map.addLayer(stationClusterGroup); map.addLayer(logClusterGroup); }
-    function onPolygonClick(e){const c=e.target.sectorName,s=$('#sector-select-box');let t=s.val()||[];const i=t.indexOf(c);if(i>-1){t.splice(i,1)}else{t.push(c)}s.val(t).trigger('change')}
-    function createLayers(){const s=new Set();mapConfig.locations.forEach(l=>{s.add(l.sector);if(!sectorMarkers[l.sector]){sectorMarkers[l.sector]=[]}const i=L.AwesomeMarkers.icon({icon:'map-marker',prefix:'fa',markerColor:'blue'}),m=L.marker([l.latitude,l.longitude],{icon:i});m.bindTooltip(l.name,{sticky:!0});l._marker=m;sectorMarkers[l.sector].push(m)});for(const e in mapConfig.sectorPolygons){const o=L.polygon(mapConfig.sectorPolygons[e],{color:mapConfig.sectorColors[e]||'gray',weight:2,...invisibleStyle}).bindPopup(`<b>${e}</b><br>${mapConfig.sectorDescriptions[e]||"No description"}`).bindTooltip(e,{sticky:!0,direction:'center',className:'polygon-label'});o.sectorName=e;o.on('click',onPolygonClick);o.addTo(map);polygonLayers[e]=o}const t=$('#sector-select-box');t.empty();s.forEach(e=>{const o=new Option(e,e,!1,!1);t.append(o)});t.trigger('change')}
-function createCoverageLayers() {
-    // Pastikan properti ini ada di config.json
-    if (!mapConfig.sectorCoverageFiles) {
-        console.log("Info: 'sectorCoverageFiles' tidak ditemukan di config.json.");
-        return;
+    if (!(date instanceof Date) || isNaN(date)) {
+        // Jika format masih tidak dikenali, kembalikan apa adanya
+        return (typeof date === 'string') ? date.split('T')[0] : date; 
     }
-
-    console.log("Mulai memuat file GeoJSON coverage...");
-
-    for (const sector in mapConfig.sectorCoverageFiles) {
-        mapConfig.sectorCoverageFiles[sector].forEach(layerInfo => {
-            fetch(layerInfo.url)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Gagal fetch ${layerInfo.url}: Status ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log(`✅ SUKSES: Data untuk "${layerInfo.name}" berhasil di-load.`);
-                    L.geoJSON(data, {
-                        style: feature => ({
-                            color: feature.properties.color,
-                            weight: 1,
-                            fillColor: feature.properties.color,
-                            fillOpacity: 0.5
-                        })
-                    }).addTo(map); // <--- LANGSUNG TAMBAHKAN KE PETA
-                })
-                .catch(error => console.error(error));
-        });
-    }
+    
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // getMonth() dimulai dari 0
+    const year = date.getFullYear();
+    
+    return `${day}/${month}/${year}`;
 }
-    function buildSearchIndex(){const d=mapConfig.locations.map(l=>{const o=radioLogs[l.varname.toUpperCase()]||[],c=mapConfig.sectorDescriptions[l.sector]||'';return{...l,logs:o,frequency:c,_marker:l._marker}}),o={includeScore:!0,threshold:.3,keys:['name','varname','sector','logs.callsign','frequency']};fuse=new Fuse(d,o);console.log("Search index updated.")}
-    function performSearch(){const e=document.getElementById('search-box'),t=e.value,o=$('#sector-select-box');if(t.trim()===''){o.val(null).trigger('change')}else{const c=fuse.search(t);if(c.length>0){const n=[...new Set(c.map(s=>s.item.sector))];o.val(n).trigger('change',['triggered_by_search'])}else{showNotification('Data tidak ditemukan')}}e.value=''}
-    function filterBySector(){const s=$('#sector-select-box').val();if(!s||s.length===0){selectAll(!0);return}hideAllLayers();s.forEach(e=>{toggleSector(e,!0)})}
-    function toggleSector(s,h){if(sectorMarkers[s]){sectorMarkers[s].forEach(m=>{h?stationClusterGroup.addLayer(m):stationClusterGroup.removeLayer(m)})}if(polygonLayers[s]){polygonLayers[s].setStyle(h?visibleStyle:invisibleStyle)}if(coverageLayers[s]){h?map.addLayer(coverageLayers[s]):map.removeLayer(coverageLayers[s])}if(logMarkersBySector[s]){logMarkersBySector[s].forEach(m=>{h?logClusterGroup.addLayer(m):logClusterGroup.removeLayer(m)})}}
-    function selectAll(s){Object.keys(sectorMarkers).forEach(e=>toggleSector(e,s));if(s){$('#sector-select-box').val(null).trigger('change.select2');$('#search-box').val('')}}
-    function hideAllLayers(){Object.keys(sectorMarkers).forEach(e=>toggleSector(e,!1))}
-    function updateMarkerPopupsWithLogs(){mapConfig.locations.forEach(l=>{if(!l._marker)return;const t=l.varname.toUpperCase(),o=radioLogs[t];let c="No logs found for this station.";if(o&&o.length>0){c=o.slice(-5).map(s=>{const e=formatDate(s.date)||'-';return`Date: ${e} | ${s.callsign||'-'} | FL${s.level||'-'} | Read: ${s.readibility||'-'}`}).join("<br>")}const n=`<b>${l.name}</b> (${l.sector})<br><i>${l.varname}</i><br><small>${mapConfig.sectorDescriptions[l.sector]||""}</small><hr style="margin:5px 0"><b>Last Logs:</b><br>${c}`;l._marker.bindPopup(n)})}
+        
+function showNotification(message) {
+    const notification = document.getElementById('notification');
+    notification.textContent = message;
+    notification.classList.add('show');
 
-    // Google akan memanggil fungsi ini secara otomatis
-    function initMap() {
-        $(document).ready(function() {
-            fetch('config.json')
-                .then(response => response.json())
-                .then(configData => {
-                    mapConfig = configData;
-                    initializeApp();
-                    createLayers();
-                    
-                    createCoverageLayers()
-                        .then(results => {
-                            results.forEach(result => {
-                                const { sector, data } = result;
-                                const geoJsonLayer = L.geoJSON(data, {
-                                    style: feature => ({
-                                        color: feature.properties.color, weight: 1,
-                                        fillColor: feature.properties.color, fillOpacity: 0.5
-                                    })
-                                });
-                                coverageLayers[sector] = geoJsonLayer;
-                                console.log(`✅ Berhasil membuat layer coverage untuk: ${sector}`);
-                            });
+    // Sembunyikan notifikasi setelah 3 detik
+    setTimeout(() => {
+        notification.classList.remove('show');
+    }, 3000);
+}
 
-                            $('#sector-select-box').select2({
-                                placeholder: 'Pilih satu/lebih sektor...',
-                                allowClear: true
-                            });
-                            $('#sector-select-box').on('change', function (e, triggerSource) {
-                                if (triggerSource !== 'triggered_by_search') { $('#search-box').val(''); }
-                                filterBySector();
-                            });
-                            $('#search-box').on('keydown', function (event) {
-                                if (event.key === 'Enter' || event.keyCode === 13) { performSearch(); }
-                            });
-                            $('#toggle-controls-btn').on('click', function() {
-                                $('#controls').toggleClass('is-hidden');
-                            });
-                            
-                            selectAll(true);
-                            loadDynamicData();
-                            buildSearchIndex();
-                        })
-                        .catch(error => {
-                            console.error('Gagal memuat satu atau lebih file coverage:', error);
-                        });
-                })
-                .catch(error => {
-                    console.error('Gagal memuat file konfigurasi:', error);
-                    document.getElementById('map').innerHTML = '<h2>Error: Gagal memuat data peta.</h2>';
-                });
+    // --- FUNGSI-FUNGSI UTAMA APLIKASI ---
+    function loadDynamicData() {
+        const apiUrl = 'https://script.google.com/macros/s/AKfycbysOsW_I0X2UxA6Gl0KwfFtFwG39imuqM4qfPPDl_alNh1TBWBIPB9kbbYvbKU3OZE/exec';
+        fetch(apiUrl).then(response => response.json()).then(data => {
+            console.log("Data log dari Google Sheet:", data);
+            const stationLocations = {};
+            mapConfig.locations.forEach(loc => { stationLocations[loc.varname.toUpperCase()] = loc; });
+            logClusterGroup.clearLayers();
+            logMarkersBySector = {};
+            radioLogs = {};
+            data.forEach(logItem => {
+                const stationVarname = (logItem.radio_id || "").trim().toUpperCase();
+                const station = stationLocations[stationVarname];
+                if (stationVarname) {
+                    if (!radioLogs[stationVarname]) { radioLogs[stationVarname] = []; }
+                    radioLogs[stationVarname].push(logItem);
+                }
+                if (station && logItem.radial != null && logItem.distance != null) {
+                    const destination = calculateDestinationPoint(station.latitude, station.longitude, logItem.radial, logItem.distance);
+                    const markerColor = getReadabilityColor(logItem.readibility);
+                    const logMarker = L.circleMarker(destination, { radius: 6, color: markerColor, fillColor: markerColor, fillOpacity: 0.9 });
+                    const date = formatDate(logItem.date) || '-';
+                    const popupContent = `
+                        <b>Log dari: ${station.name}</b><hr style="margin: 5px 0;">
+                        <b>Tanggal:</b> ${date}<br> 
+                        <b>Callsign:</b> ${logItem.callsign || '-'}<br>
+                        <b>Level:</b> FL${logItem.level || '-'}<br>
+                        <b>Readability:</b> ${logItem.readibility || '-'}<br>
+                        <b>Radial:</b> ${logItem.radial}°<br>
+                        <b>Distance:</b> ${logItem.distance}nm
+                    `;
+                    logMarker.bindPopup(popupContent);
+                    const sector = station.sector;
+                    if (!logMarkersBySector[sector]) { logMarkersBySector[sector] = []; }
+                    logMarkersBySector[sector].push(logMarker);
+                }
+            });
+            filterBySector();
+            updateMarkerPopupsWithLogs();
+            buildSearchIndex();
+        }).catch(error => console.error('Gagal mengambil data:', error));
+    }
+
+    function initializeApp() {
+        L.gridLayer.googleMutant({ type: 'roadmap' }).addTo(map);
+        map.addLayer(stationClusterGroup);
+        map.addLayer(logClusterGroup);
+    }
+
+    function onPolygonClick(e) {
+        const clickedSector = e.target.sectorName;
+        const selectBox = $('#sector-select-box');
+        let currentSelection = selectBox.val() || [];
+        const index = currentSelection.indexOf(clickedSector);
+        if (index > -1) {
+            currentSelection.splice(index, 1);
+        } else {
+            currentSelection.push(clickedSector);
+        }
+        selectBox.val(currentSelection).trigger('change');
+    }
+    
+    function createLayers() {
+        const sectors = new Set();
+        mapConfig.locations.forEach(loc => {
+            sectors.add(loc.sector);
+            if (!sectorMarkers[loc.sector]) { sectorMarkers[loc.sector] = []; }
+            const icon = L.AwesomeMarkers.icon({ icon: 'map-marker', prefix: 'fa', markerColor: 'blue' });
+            const marker = L.marker([loc.latitude, loc.longitude], { icon: icon });
+            marker.bindTooltip(loc.name, { sticky: true });
+            loc._marker = marker;
+            sectorMarkers[loc.sector].push(marker);
+        });
+
+        for (const sector in mapConfig.sectorPolygons) {
+            const polygon = L.polygon(mapConfig.sectorPolygons[sector], {
+                color: mapConfig.sectorColors[sector] || 'gray', weight: 2,
+                ...invisibleStyle
+            }).bindPopup(`<b>${sector}</b><br>${mapConfig.sectorDescriptions[sector] || "No description"}`)
+              .bindTooltip(sector, { sticky: true, direction: 'center', className: 'polygon-label' });
+            polygon.sectorName = sector;
+            polygon.on('click', onPolygonClick);
+            polygon.addTo(map);
+            polygonLayers[sector] = polygon;
+        }
+
+        const selectBox = $('#sector-select-box');
+        selectBox.empty();
+        sectors.forEach(sec => {
+            const option = new Option(sec, sec, false, false);
+            selectBox.append(option);
+        });
+        selectBox.trigger('change');
+    }
+
+    function buildSearchIndex() {
+        const searchData = mapConfig.locations.map(loc => {
+            const logs = radioLogs[loc.varname.toUpperCase()] || [];
+            const frequencyInfo = mapConfig.sectorDescriptions[loc.sector] || '';
+            return { ...loc, logs, frequency: frequencyInfo, _marker: loc._marker };
+        });
+        const options = {
+            includeScore: true, threshold: 0.3,
+            keys: ['name', 'varname', 'sector', 'logs.callsign', 'frequency']
+        };
+        fuse = new Fuse(searchData, options);
+        console.log("Search index updated.");
+    }
+
+function performSearch() {
+    const searchBox = document.getElementById('search-box');
+    const searchTerm = searchBox.value;
+    const sectorSelect = $('#sector-select-box');
+
+    if (searchTerm.trim() === '') {
+        sectorSelect.val(null).trigger('change');
+    } else {
+        const results = fuse.search(searchTerm);
+
+        if (results.length > 0) {
+            const uniqueSectors = [...new Set(results.map(result => result.item.sector))];
+            sectorSelect.val(uniqueSectors).trigger('change', ['triggered_by_search']);
+        } else {
+            showNotification('Data tidak ditemukan');
+        }
+    }
+
+    // Apapun hasilnya, kosongkan search box setelah Enter
+    searchBox.value = '';
+}
+
+    function filterBySector() {
+        const selectedSectors = $('#sector-select-box').val();
+        if (!selectedSectors || selectedSectors.length === 0) {
+            selectAll(true);
+            return;
+        }
+        hideAllLayers();
+        selectedSectors.forEach(sector => {
+            toggleSector(sector, true);
         });
     }
+
+    function toggleSector(sector, show) {
+        if (sectorMarkers[sector]) {
+            sectorMarkers[sector].forEach(marker => {
+                show ? stationClusterGroup.addLayer(marker) : stationClusterGroup.removeLayer(marker);
+            });
+        }
+        if (polygonLayers[sector]) {
+            polygonLayers[sector].setStyle(show ? visibleStyle : invisibleStyle);
+        }
+
+        if (logMarkersBySector[sector]) {
+            logMarkersBySector[sector].forEach(marker => {
+                show ? logClusterGroup.addLayer(marker) : logClusterGroup.removeLayer(marker);
+            });
+        }
+    }
+
+    function selectAll(state) {
+        Object.keys(sectorMarkers).forEach(sector => toggleSector(sector, state));
+        if (state) {
+            $('#sector-select-box').val(null).trigger('change.select2');
+            $('#search-box').val('');
+        }
+    }
+
+    function hideAllLayers() {
+        Object.keys(sectorMarkers).forEach(sector => toggleSector(sector, false));
+    }
+
+function updateMarkerPopupsWithLogs() {
+    mapConfig.locations.forEach(loc => {
+        if (!loc._marker) return;
+
+        const varnameUpper = loc.varname.toUpperCase();
+        const logs = radioLogs[varnameUpper];
+        let logText = "No logs found for this station.";
+
+        if (logs && logs.length > 0) {
+            logText = logs.slice(-5).map(log => {
+                const date = formatDate(log.date) || '-'; 
+                const callsign = log.callsign || '-';
+                const level = log.level || '-';
+                const readability = log.readibility || '-';
+                const radial = log.radial || '-';
+                const distance = log.distance || '-';
+                const checkpoint = log.checkpoint || '-';
+
+                return `Date: ${date} | ${callsign} | FL${level} | Via: ${checkpoint} | Rad: ${radial} | Dist: ${distance}nm | Read: ${readability}`;
+            }).join("<br>");
+        }
+
+        const popupContent = `
+            <b>${loc.name}</b> (${loc.sector})<br>
+            <i>${loc.varname}</i><br>
+            <small>${mapConfig.sectorDescriptions[loc.sector] || ""}</small>
+            <hr style="margin: 5px 0;">
+            <b>Last Logs:</b><br>${logText}
+        `;
+        loc._marker.bindPopup(popupContent);
+    });
+}
+    function setupCoverageLayers(mapConfig) {
+        if (!mapConfig.sectorCoverageFiles) return;
+
+        const coverageControlLayers = {};
+        const allPromises = [];
+
+        for (const sector in mapConfig.sectorCoverageFiles) {
+            mapConfig.sectorCoverageFiles[sector].forEach(layerInfo => {
+                const promise = fetch(layerInfo.url)
+                    .then(response => response.ok ? response.json() : Promise.reject(`HTTP error!`))
+                    .then(data => {
+                        const geoJsonLayer = L.geoJSON(data, {
+                            style: feature => ({
+                                color: feature.properties.color, weight: 1,
+                                fillColor: feature.properties.color, fillOpacity: 0.5
+                            })
+                        });
+                        coverageControlLayers[layerInfo.name] = geoJsonLayer;
+                    })
+                    .catch(error => console.error(`Gagal memuat ${layerInfo.url}:`, error));
+                allPromises.push(promise);
+            });
+        }
+
+        Promise.all(allPromises).then(() => {
+            L.control.layers(null, coverageControlLayers, { collapsed: false, position: 'topright' }).addTo(map);
+            console.log("✅ Kontrol layer coverage berhasil dibuat.");
+        });
+    }        
+    // --- JALANKAN APLIKASI ---
+function initMap() {
+    fetch('config.json')
+        .then(response => response.json())
+        .then(configData => {
+            mapConfig = configData;
+            
+            initializeApp();
+            createLayers();
+            setupCoverageLayers(mapConfig);
+
+            $('#sector-select-box').select2({
+                placeholder: 'Pilih satu/lebih sektor...',
+                allowClear: true
+            });
+            
+            $('#sector-select-box').on('change', function (e, triggerSource) {
+                if (triggerSource !== 'triggered_by_search') {
+                    $('#search-box').val('');
+                }
+                filterBySector();
+            });
+            
+            $('#search-box').on('keydown', function (event) {
+                if (event.key === 'Enter' || event.keyCode === 13) {
+                    performSearch();
+                }
+            });
+
+            $('#toggle-controls-btn').on('click', function() {
+                $('#controls').toggleClass('is-hidden');
+            });
+            
+            selectAll(true);
+            loadDynamicData();
+            buildSearchIndex();
+        })
+        .catch(error => {
+            console.error('Gagal memuat file konfigurasi:', error);
+            document.getElementById('map').innerHTML = '<h2>Error: Gagal memuat data peta.</h2>';
+        });
+}
 </script>
 </body>
 </html>
-

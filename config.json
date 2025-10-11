@@ -27,6 +27,7 @@
     { "name": "Jakarta", "latitude": -6.132542965, "longitude": 106.634537, "varname": "CKG UJKT", "sector": "UJKT" },
     { "name": "Pangkal Pinang", "latitude": -2.160398231, "longitude": 106.1419171, "varname": "PKP", "sector": "UPKP" },
     { "name": "Tanjung Pinang", "latitude": 0.922999978, "longitude": 104.5199966, "varname": "TNJ UPKP", "sector": "UPKP" },
+    { "name": "Jambi", "latitude": -1.635302488, "longitude": 103.64604351, "varname": "DJB UPKP", "sector": "UPKP" },
     { "name": "Matak", "latitude": 3.34320013, "longitude": 106.2569768, "varname": "MTK", "sector": "UNTA" },
     { "name": "Natuna", "latitude": 3.963670015, "longitude": 108.4000015, "varname": "NTA UNTA", "sector": "UNTA" },
     { "name": "Pontianak", "latitude": 0.131439999, "longitude": 109.4089966, "varname": "PNK", "sector": "UPNK" },

@@ -7,4 +7,4 @@ JARVIS juga memegang peranan penting dalam menyajikan data esensial untuk menduk
 
 Untuk memastikan pengalaman pengguna yang baik, seluruh aspek UI/UX dari JARVIS dikembangkan secara kreatif oleh kecerdasan buatan LLM Gemini.
 
-Copyright Faskompen JATSC 2025 - R.Ariwbowo
+Copyright Faskompen JATSC 2025 - Putut T. B x R.Ariwbowo

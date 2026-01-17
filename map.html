@@ -288,7 +288,7 @@
                 L.control.zoom({ position: 'bottomleft' }).addTo(map);
                 
                 // 2. Tambahkan Google Layer
-                L.gridLayer.googleMutant({ type: 'roadmap' }).addTo(map);
+                L.gridLayer.googleMutant({ type: 'satellite' }).addTo(map);
                 
                 map.addLayer(stationClusterGroup);
                 map.addLayer(logClusterGroup);
@@ -313,3 +313,4 @@
     </script>
 </body>
 </html>
+

@@ -288,7 +288,9 @@
                 L.control.zoom({ position: 'bottomleft' }).addTo(map);
                 
                 // 2. Tambahkan Google Layer
-                L.gridLayer.googleMutant({ type: 'satellite' }).addTo(map);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+}).addTo(map);
                 
                 map.addLayer(stationClusterGroup);
                 map.addLayer(logClusterGroup);
@@ -313,4 +315,5 @@
     </script>
 </body>
 </html>
+
 

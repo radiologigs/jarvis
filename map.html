@@ -110,22 +110,28 @@
         if (r >= 4) return 'green'; if (r >= 2) return 'yellow'; if (r >= 0) return 'red'; return 'grey';
     }
 
-function formatDate(dateTimeStr) {
-    if (!dateTimeStr || dateTimeStr.includes('undefined')) return '-';
+function formatDate(dateVal, timeVal) {
+    // Kalau datanya kosong
+    if (!dateVal || !timeVal) return "-";
 
-    // Buat objek Date dari gabungan tanggal & jam
-    let d = new Date(dateTimeStr);
+    try {
+        // Ambil bagian TANGGAL saja (10 karakter pertama: YYYY-MM-DD)
+        const datePart = dateVal.toString().substring(0, 10);
+        
+        // Ambil bagian JAM saja (Cari huruf 'T', ambil 8 karakter setelahnya: HH:mm:ss)
+        const tIndex = timeVal.toString().indexOf('T');
+        const timePart = tIndex !== -1 
+            ? timeVal.toString().substring(tIndex + 1, tIndex + 6) // Ambil HH:mm
+            : timeVal.toString().substring(0, 5);
 
-    // Jika format tanggal di Sheet lu pake DD/MM/YYYY (bukan standar US), 
-    // kadang perlu dibersihin manual, tapi coba ini dulu:
-    if (isNaN(d.getTime())) return dateTimeStr;
-
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const hours = String(d.getHours()).padStart(2, '0');
-    const minutes = String(d.getMinutes()).padStart(2, '0');
-
-    return `${day}/${month} ${hours}:${minutes} UTC`;
+        // Pecah tanggal buat diformat DD/MM
+        const [year, month, day] = datePart.split('-');
+        
+        return `${day}/${month} ${timePart} LT`;
+    } catch (e) {
+        console.error("Error formatting date:", e);
+        return "Format Error";
+    }
 }
         
     function showNotification(message) {
@@ -266,19 +272,20 @@ function updateMarkerPopupsWithLogs() {
 
         const logs = radioLogs[loc.varname.toUpperCase()] || [];
         
-        // 2. Susun tampilan Log
-        let logText = logs.length > 0 
-            ? logs.slice(-3).map(l => {
-                // GABUNGIN TANGGAL + JAM biar gak 00:00
-                const fullDateTime = `${l.date} ${l.time}`; 
-                return `
-                <div style="border-bottom: 1px solid #eee; padding: 4px 0;">
-                    <small style="color: #666;">[${formatDate(fullDateTime)}]</small><br>
-                    <b>FL${l.level || '-'} | ${l.callsign || '-'} | R:${l.readibility || '-'}</b>
-                </div>`;
-            }).join("") 
-            : "<span style='color:red;'>No recent logs.</span>";
-
+// 2. Susun tampilan Log
+let logText = logs.length > 0 
+    ? logs.slice(-3).map(l => {
+        // Panggil fungsi formatDate dengan mengirim l.date DAN l.time
+        const displayTime = formatDate(l.date, l.time); 
+        
+        return `
+        <div style="border-bottom: 1px solid #eee; padding: 4px 0;">
+            <small style="color: #666;">[${displayTime}]</small><br>
+            <b>FL${l.level || '-'} | ${l.callsign || '-'} | R:${l.readibility || '-'}</b>
+        </div>`;
+    }).join("") 
+    : "<span style='color:red;'>No recent logs.</span>";
+        
         // 3. Render Popup
         loc._marker.bindPopup(`
             <div style="min-width:200px; font-family: Arial, sans-serif;">
@@ -357,6 +364,7 @@ function updateMarkerPopupsWithLogs() {
     </script>
 </body>
 </html>
+
 
 
 

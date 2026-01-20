@@ -110,18 +110,22 @@
         if (r >= 4) return 'green'; if (r >= 2) return 'yellow'; if (r >= 0) return 'red'; return 'grey';
     }
 
-function formatDate(date) {
-    if (typeof date === 'string' && date.includes('T')) { date = new Date(date); }
-    if (!(date instanceof Date) || isNaN(date)) { return (typeof date === 'string') ? date.split('T')[0] : date; }
-    
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
+function formatDate(dateTimeStr) {
+    if (!dateTimeStr || dateTimeStr.includes('undefined')) return '-';
 
-    // Sekarang return-nya ada Jam dan Menit
-    return `${day}/${month}/${year} ${hours}:${minutes} LT`;
+    // Buat objek Date dari gabungan tanggal & jam
+    let d = new Date(dateTimeStr);
+
+    // Jika format tanggal di Sheet lu pake DD/MM/YYYY (bukan standar US), 
+    // kadang perlu dibersihin manual, tapi coba ini dulu:
+    if (isNaN(d.getTime())) return dateTimeStr;
+
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+
+    return `${day}/${month} ${hours}:${minutes} UTC`;
 }
         
     function showNotification(message) {
@@ -255,7 +259,7 @@ function updateMarkerPopupsWithLogs() {
     mapConfig.locations.forEach(loc => {
         if (!loc._marker) return;
 
-        // 1. Ambil info frekuensi & kasih warna Biru otomatis pada kata "Primary"
+        // 1. Ambil info frekuensi & Warna (Primary: Blue, Secondary: Green)
         let freqInfo = mapConfig.sectorDescriptions[loc.sector] || "Freq: -";
         freqInfo = freqInfo.replace("Primary:", "<b style='color:blue;'>Primary:</b>");
         freqInfo = freqInfo.replace("Secondary:", "<b style='color:green;'>Secondary:</b>");
@@ -264,12 +268,15 @@ function updateMarkerPopupsWithLogs() {
         
         // 2. Susun tampilan Log
         let logText = logs.length > 0 
-            ? logs.slice(-3).map(l => `
+            ? logs.slice(-3).map(l => {
+                // GABUNGIN TANGGAL + JAM biar gak 00:00
+                const fullDateTime = `${l.date} ${l.time}`; 
+                return `
                 <div style="border-bottom: 1px solid #eee; padding: 4px 0;">
-                    <small style="color: #666;">[${formatDate(l.date)}]</small><br>
+                    <small style="color: #666;">[${formatDate(fullDateTime)}]</small><br>
                     <b>FL${l.level || '-'} | ${l.callsign || '-'} | R:${l.readibility || '-'}</b>
-                </div>
-            `).join("") 
+                </div>`;
+            }).join("") 
             : "<span style='color:red;'>No recent logs.</span>";
 
         // 3. Render Popup
@@ -350,6 +357,7 @@ function updateMarkerPopupsWithLogs() {
     </script>
 </body>
 </html>
+
 
 
 

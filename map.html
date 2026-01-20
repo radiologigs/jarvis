@@ -110,26 +110,18 @@
         if (r >= 4) return 'green'; if (r >= 2) return 'yellow'; if (r >= 0) return 'red'; return 'grey';
     }
 
-function formatDate(dateStr, timeStr) {
-    if (!dateStr || !timeStr) return "-";
+function formatDate(date) {
+    if (typeof date === 'string' && date.includes('T')) { date = new Date(date); }
+    if (!(date instanceof Date) || isNaN(date)) { return (typeof date === 'string') ? date.split('T')[0] : date; }
     
-    try {
-        // Ambil Tanggal (DD/MM) dari string ISO date (misal: 2024-08-20T...)
-        const dPart = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
-        const [year, month, day] = dPart.split('-');
-        
-        // Ambil Jam (HH:mm) dari string ISO time (misal: 1899-12-30T04:27...)
-        let tPart = "";
-        if (timeStr.includes('T')) {
-            tPart = timeStr.split('T')[1].substring(0, 5);
-        } else {
-            tPart = timeStr.substring(0, 5);
-        }
-        
-        return `${day}/${month} ${tPart} LT`;
-    } catch (e) {
-        return "Format Error";
-    }
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+
+    // Sekarang return-nya ada Jam dan Menit
+    return `${day}/${month}/${year} ${hours}:${minutes} LT`;
 }
         
     function showNotification(message) {
@@ -263,21 +255,24 @@ function updateMarkerPopupsWithLogs() {
     mapConfig.locations.forEach(loc => {
         if (!loc._marker) return;
 
+        // 1. Ambil info frekuensi & kasih warna Biru otomatis pada kata "Primary"
         let freqInfo = mapConfig.sectorDescriptions[loc.sector] || "Freq: -";
         freqInfo = freqInfo.replace("Primary:", "<b style='color:blue;'>Primary:</b>");
         freqInfo = freqInfo.replace("Secondary:", "<b style='color:green;'>Secondary:</b>");
 
         const logs = radioLogs[loc.varname.toUpperCase()] || [];
         
+        // 2. Susun tampilan Log
         let logText = logs.length > 0 
             ? logs.slice(-3).map(l => `
                 <div style="border-bottom: 1px solid #eee; padding: 4px 0;">
-                    <small style="color: #666;">[${formatDate(l.date, l.time)}]</small><br>
+                    <small style="color: #666;">[${formatDate(l.date)}]</small><br>
                     <b>FL${l.level || '-'} | ${l.callsign || '-'} | R:${l.readibility || '-'}</b>
                 </div>
             `).join("") 
             : "<span style='color:red;'>No recent logs.</span>";
 
+        // 3. Render Popup
         loc._marker.bindPopup(`
             <div style="min-width:200px; font-family: Arial, sans-serif;">
                 <b style="font-size:16px; color: #1a1a1a;">${loc.name.toUpperCase()}</b><br>
@@ -355,10 +350,3 @@ function updateMarkerPopupsWithLogs() {
     </script>
 </body>
 </html>
-
-
-
-
-
-
-

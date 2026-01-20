@@ -245,14 +245,30 @@
         $('#search-box').val('');
     }
 
-    function updateMarkerPopupsWithLogs() {
-        mapConfig.locations.forEach(loc => {
-            if (!loc._marker) return;
-            const logs = radioLogs[loc.varname.toUpperCase()] || [];
-            let logText = logs.length > 0 ? logs.slice(-3).map(l => `FL${l.level} | ${l.callsign} | R:${l.readibility}`).join("<br>") : "No logs.";
-            loc._marker.bindPopup(`<b>${loc.name}</b><br><small>${loc.varname}</small><hr>${logText}`);
-        });
-    }
+function updateMarkerPopupsWithLogs() {
+    mapConfig.locations.forEach(loc => {
+        if (!loc._marker) return;
+
+        // Ambil frekuensi berdasarkan sektor lokasi tersebut
+        const freq = mapConfig.sectorDescriptions[loc.sector] || "Freq Belum Diatur";
+        
+        const logs = radioLogs[loc.varname.toUpperCase()] || [];
+        let logText = logs.length > 0 
+            ? logs.slice(-3).map(l => `FL${l.level || '-'} | ${l.callsign || '-'} | R:${l.readibility || '-'}`).join("<br>") 
+            : "<span style='color:red;'>No recent logs found.</span>";
+
+        // Kita masukin variabel freq ke dalam popup
+        loc._marker.bindPopup(`
+            <div style="min-width:150px">
+                <b style="font-size:14px;">${loc.name}</b><br>
+                <small>ID: ${loc.varname} | Sektor: ${loc.sector}</small><br>
+                <b style="color:#2c3e50;">Freq: ${freq}</b>
+                <hr style="margin: 5px 0;">
+                <div style="font-size:11px;">${logText}</div>
+            </div>
+        `);
+    });
+}
 
     function setupCoverageLayers(config) {
         if (!config.sectorCoverageFiles) return;
@@ -315,5 +331,6 @@
     </script>
 </body>
 </html>
+
 
 

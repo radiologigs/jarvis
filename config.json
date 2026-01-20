@@ -33,7 +33,7 @@
     { "name": "Ketapang", "latitude": -1.816029, "longitude": 109.961583, "varname": "KTP", "sector": "UPNK" }
   ],
   "sectorDescriptions": {
-    "UNTA": "Primary Frequency: 134.025 MHz",
+    "UNTA": "Primary: 134.025 MHz",
     "UMDN": "Primary: 133.2 MHz<br>Secondary: 133.45 MHz",
     "UTPD": "Primary: 125.7 MHz<br>Secondary: 133.9 MHz",
     "UBAC": "Primary: 128.3 MHz<br>Secondary: 132.2 MHz",

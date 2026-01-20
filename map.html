@@ -110,26 +110,24 @@
         if (r >= 4) return 'green'; if (r >= 2) return 'yellow'; if (r >= 0) return 'red'; return 'grey';
     }
 
-function formatDate(dateVal, timeVal) {
-    // Kalau datanya kosong
-    if (!dateVal || !timeVal) return "-";
-
+function formatDate(dateStr, timeStr) {
+    if (!dateStr || !timeStr) return "-";
+    
     try {
-        // Ambil bagian TANGGAL saja (10 karakter pertama: YYYY-MM-DD)
-        const datePart = dateVal.toString().substring(0, 10);
+        // Ambil Tanggal (DD/MM) dari string ISO date (misal: 2024-08-20T...)
+        const dPart = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+        const [year, month, day] = dPart.split('-');
         
-        // Ambil bagian JAM saja (Cari huruf 'T', ambil 8 karakter setelahnya: HH:mm:ss)
-        const tIndex = timeVal.toString().indexOf('T');
-        const timePart = tIndex !== -1 
-            ? timeVal.toString().substring(tIndex + 1, tIndex + 6) // Ambil HH:mm
-            : timeVal.toString().substring(0, 5);
-
-        // Pecah tanggal buat diformat DD/MM
-        const [year, month, day] = datePart.split('-');
+        // Ambil Jam (HH:mm) dari string ISO time (misal: 1899-12-30T04:27...)
+        let tPart = "";
+        if (timeStr.includes('T')) {
+            tPart = timeStr.split('T')[1].substring(0, 5);
+        } else {
+            tPart = timeStr.substring(0, 5);
+        }
         
-        return `${day}/${month} ${timePart} LT`;
+        return `${day}/${month} ${tPart} LT`;
     } catch (e) {
-        console.error("Error formatting date:", e);
         return "Format Error";
     }
 }
@@ -265,28 +263,21 @@ function updateMarkerPopupsWithLogs() {
     mapConfig.locations.forEach(loc => {
         if (!loc._marker) return;
 
-        // 1. Ambil info frekuensi & Warna (Primary: Blue, Secondary: Green)
         let freqInfo = mapConfig.sectorDescriptions[loc.sector] || "Freq: -";
         freqInfo = freqInfo.replace("Primary:", "<b style='color:blue;'>Primary:</b>");
         freqInfo = freqInfo.replace("Secondary:", "<b style='color:green;'>Secondary:</b>");
 
         const logs = radioLogs[loc.varname.toUpperCase()] || [];
         
-// 2. Susun tampilan Log
-let logText = logs.length > 0 
-    ? logs.slice(-3).map(l => {
-        // Panggil fungsi formatDate dengan mengirim l.date DAN l.time
-        const displayTime = formatDate(l.date, l.time); 
-        
-        return `
-        <div style="border-bottom: 1px solid #eee; padding: 4px 0;">
-            <small style="color: #666;">[${displayTime}]</small><br>
-            <b>FL${l.level || '-'} | ${l.callsign || '-'} | R:${l.readibility || '-'}</b>
-        </div>`;
-    }).join("") 
-    : "<span style='color:red;'>No recent logs.</span>";
-        
-        // 3. Render Popup
+        let logText = logs.length > 0 
+            ? logs.slice(-3).map(l => `
+                <div style="border-bottom: 1px solid #eee; padding: 4px 0;">
+                    <small style="color: #666;">[${formatDate(l.date, l.time)}]</small><br>
+                    <b>FL${l.level || '-'} | ${l.callsign || '-'} | R:${l.readibility || '-'}</b>
+                </div>
+            `).join("") 
+            : "<span style='color:red;'>No recent logs.</span>";
+
         loc._marker.bindPopup(`
             <div style="min-width:200px; font-family: Arial, sans-serif;">
                 <b style="font-size:16px; color: #1a1a1a;">${loc.name.toUpperCase()}</b><br>
@@ -364,6 +355,7 @@ let logText = logs.length > 0
     </script>
 </body>
 </html>
+
 
 
 

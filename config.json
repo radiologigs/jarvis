@@ -31,7 +31,8 @@
     { "name": "Natuna", "latitude": 3.963670015, "longitude": 108.4000015, "varname": "NTA UNTA", "sector": "UNTA" },
     { "name": "Pontianak", "latitude": 0.131439999, "longitude": 109.4089966, "varname": "PNK", "sector": "UPNK" },
     { "name": "Ketapang", "latitude": -1.816029, "longitude": 109.961583, "varname": "KTP", "sector": "UPNK" },
-    { "name": "Silangit", "latitude": 2.261277, "longitude": 98.9850, "varname": "SLGT", "sector": "UMDN" }
+    { "name": "Silangit", "latitude": 2.261277, "longitude": 98.9850, "varname": "SLGT", "sector": "UMDN" },
+    { "name": "Batam", "latitude": 1.1199605, "longitude": 104.1136558, "varname": "BTH", "sector": "UNTA" }
   ],
   "sectorDescriptions": {
     "UNTA": "Primary: 134.025 MHz",

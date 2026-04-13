@@ -109,40 +109,42 @@
         const r = parseInt(readability, 10);
         if (r >= 4) return 'green'; if (r >= 2) return 'yellow'; if (r >= 0) return 'red'; return 'grey';
     }
-
+        
 function formatDate(dateVal, timeVal) {
     if (!dateVal) return "-";
 
-    // 1. Ambil Tanggal (Day, Month, Year)
+    // 1. Ambil Tanggal (Tetap pake cara Date karena kata lu udah oke)
     const d = new Date(dateVal);
     const day = String(d.getDate()).padStart(2, '0');
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const year = d.getFullYear();
 
-    // 2. Ambil Jam & Menit dari timeVal
+    // 2. Ambil Jam (Spesifik buat format 14:00:00)
     let hours = "00";
     let minutes = "00";
 
     if (timeVal) {
-        if (typeof timeVal === 'string' && timeVal.includes('T')) {
-            // Kalau format ISO (1899-12-30T14:10...)
-            const tPart = timeVal.split('T')[1];
-            hours = tPart.substring(0, 2);
-            minutes = tPart.substring(3, 5);
-        } else if (typeof timeVal === 'string' && timeVal.includes(':')) {
-            // Kalau format jam biasa (14:10:00)
-            const tPart = timeVal.split(':');
-            hours = tPart[0].padStart(2, '0');
-            minutes = tPart[1].padStart(2, '0');
-        } else {
-            // Kalau dikirim sebagai objek Date
-            const t = new Date(timeVal);
-            hours = String(t.getHours()).padStart(2, '0');
-            minutes = String(t.getMinutes()).padStart(2, '0');
+        const tStr = String(timeVal); // Ubah jadi string biar aman
+
+        if (tStr.includes(':')) {
+            // Kalau formatnya "14:00:00", kita pecah pake ":"
+            // parts[0] = 14, parts[1] = 00
+            const parts = tStr.split(':');
+            
+            // Kadang kalau format ISO, jamnya ada di setelah huruf 'T'
+            if (tStr.includes('T')) {
+                const timePart = tStr.split('T')[1];
+                hours = timePart.substring(0, 2);
+                minutes = timePart.substring(3, 5);
+            } else {
+                // Ini buat format "14:00:00" biasa
+                hours = parts[0].trim().padStart(2, '0');
+                minutes = parts[1].trim().padStart(2, '0');
+            }
         }
     }
 
-    // Return format lengkap: DD/MM/YYYY HH:mm LT
+    // Return format lengkap dengan Jam yang udah "bangun"
     return `${day}/${month}/${year} ${hours}:${minutes} LT`;
 }
         
